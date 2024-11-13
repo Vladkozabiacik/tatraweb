@@ -1,0 +1,41 @@
+<style>
+    body, html {
+        height: 100%;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #f0f0f0;
+    }
+
+    .logout-message {
+        text-align: center;
+        padding: 20px;
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .logout-message h2 {
+        margin: 0;
+        font-size: 24px;
+        color: #333;
+    }
+
+    .logout-message p {
+        margin-top: 10px;
+        font-size: 16px;
+        color: #666;
+    }
+</style>
+
+<div class="logout-message">
+    <h2>You have been successfully logged out!</h2>
+    <p>Redirecting to the login page...</p>
+</div>
+
+<script>
+    setTimeout(function() {
+        window.location.href = "/";
+    }, 2000);
+</script>

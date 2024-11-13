@@ -1,0 +1,17 @@
+<!-- templates/salesman.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Salesman Dashboard</title>
+</head>
+<body>
+    <h1>Create Order</h1>
+    <form hx-post="/orders" hx-target="#order-status">
+        <label>Customer Name: <input type="text" name="customer_name"></label>
+        <label>Description: <textarea name="description"></textarea></label>
+        <button type="submit">Submit</button>
+    </form>
+    <div id="order-status"></div>
+</body>
+</html>

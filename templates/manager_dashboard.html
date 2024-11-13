@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="sk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Správca - Správa používateľov</title>
+    <script src="https://unpkg.com/htmx.org@1.8.4"></script>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+<body>
+    <h1>Správca - Správa používateľov</h1>
+    <button hx-post="/logout" hx-target="body" hx-swap="outerHTML">
+        Logout
+    </button>
+    <div class="container">
+        <h2>Pridaj alebo uprav používateľa</h2>
+        <form id="userForm" hx-post="/add-user">
+            <div class="form-group">
+                <label for="firstName">Meno:</label>
+                <input type="text" id="firstName" name="firstName" required>
+            </div>
+            <div class="form-group">
+                <label for="lastName">Priezvisko:</label>
+                <input type="text" id="lastName" name="lastName" required>
+            </div>
+            <div class="form-group">
+                <label for="login">Login:</label>
+                <input type="text" id="login" name="login" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Heslo:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <div class="form-group">
+                <label for="position">Pozícia:</label>
+                <select id="position" name="position" onchange="toggleWorksiteField()" required>
+                    <option value="salesman">Obchoďák</option>
+                    <option value="admin">AD pracovník</option>
+                    <option value="worker">Výroba</option>
+                </select>
+            </div>
+            <div id="worksiteDiv" class="form-group hidden">
+                <label for="worksite">Pracovisko:</label>
+                <select id="worksite" name="worksite">
+                    <option value="sypke">Sypké</option>
+                    <option value="pozivatiny">Poživatiny</option>
+                    <option value="kozmetika">Kozmetika</option>
+                    <option value="sklad">Sklad</option>
+                </select>
+            </div>
+            <button type="submit" class="button" hx-get="/fetch-all-users" hx-target="#usersTable tbody"
+                hx-swap="outerHTML">Pridať používateľa</button>
+        </form>
+
+        <h2>Existujúci používatelia</h2>
+        <table id="usersTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Surname</th>
+                    <th>Login</th>
+                    <th>Role</th>
+                    <th>Date Created</th>
+                    <th>Worksite</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody hx-get="/fetch-all-users" hx-target="#usersTable tbody" hx-trigger="load" hx-swap="outerHTML">
+            </tbody>
+        </table>
+
+        <button hx-get="/fetch-all-users" hx-target="#usersTable tbody" hx-swap="outerHTML" type="submit">Refresh
+            Users</button>
+
+    </div>
+
+    <script src="/static/js/manager_dashboard.js"></script>
+
+</body>
+
+</html>
