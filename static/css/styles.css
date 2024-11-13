@@ -68,3 +68,23 @@ select {
 .hidden {
     display: none;
 }
+
+/* Styling for the logout button */
+#logout-button {
+    background-color: #f44336; /* Red background for logout */
+    color: white; /* White text */
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#logout-button:hover {
+    background-color: #d32f2f; /* Darker red on hover */
+}
+
+#logout-button:focus {
+    outline: none; /* Remove the outline when focused */
+}

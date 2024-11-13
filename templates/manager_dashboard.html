@@ -11,12 +11,12 @@
 
 <body>
     <h1>Správca - Správa používateľov</h1>
-    <button hx-post="/logout" hx-target="body" hx-swap="outerHTML">
+    <button hx-post="/logout" hx-target="body" hx-swap="outerHTML" id="logout-button">
         Logout
     </button>
     <div class="container">
         <h2>Pridaj alebo uprav používateľa</h2>
-        <form id="userForm" hx-post="/add-user">
+        <form id="userForm" hx-post="/add-user" hx-trigger="submit" hx-target="#usersTable tbody" hx-swap="outerHTML">
             <div class="form-group">
                 <label for="firstName">Meno:</label>
                 <input type="text" id="firstName" name="firstName" required>
@@ -50,8 +50,7 @@
                     <option value="sklad">Sklad</option>
                 </select>
             </div>
-            <button type="submit" class="button" hx-get="/fetch-all-users" hx-target="#usersTable tbody"
-                hx-swap="outerHTML">Pridať používateľa</button>
+            <button type="submit" class="button">Pridať používateľa</button>
         </form>
 
         <h2>Existujúci používatelia</h2>
@@ -69,12 +68,11 @@
                 </tr>
             </thead>
             <tbody hx-get="/fetch-all-users" hx-target="#usersTable tbody" hx-trigger="load" hx-swap="outerHTML">
+                <!-- Existing users will be loaded here -->
             </tbody>
         </table>
 
-        <button hx-get="/fetch-all-users" hx-target="#usersTable tbody" hx-swap="outerHTML" type="submit">Refresh
-            Users</button>
-
+        <button hx-get="/fetch-all-users" hx-target="#usersTable tbody" hx-swap="outerHTML" type="submit">Refresh Users</button>
     </div>
 
     <script src="/static/js/manager_dashboard.js"></script>

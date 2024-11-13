@@ -12,48 +12,66 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var jwtKey = []byte("your-secret-key")
+const (
+	tokenDuration   = 4 * time.Hour
+	tokenCookieName = "jwt_token"
+	tokenIssuer     = "tatraweb"
+)
+
+var (
+	jwtKey          = []byte("your-secret-key")
+	roleRedirectMap = map[string]string{
+		"manager":  "/manager",
+		"admin":    "/admin",
+		"salesman": "/salesman",
+		"worker":   "/worker",
+	}
+)
+
+type AuthError struct {
+	Message string
+	Code    int
+}
+
+func newAuthError(message string, code int) *AuthError {
+	return &AuthError{
+		Message: message,
+		Code:    code,
+	}
+}
 
 func RegisterUserInDB(user *User) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to hash password: %w", err)
 	}
-	user.Password = string(hashedPassword)
 
-	query := `INSERT INTO users (first_name, last_name, login, password, worksite, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
-	err = db.QueryRow(query, user.FirstName, user.LastName, user.Login, user.Password, user.Worksite, user.Role).Scan(&user.ID)
+	const query = `
+		INSERT INTO users (first_name, last_name, login, password, worksite, role) 
+		VALUES ($1, $2, $3, $4, $5, $6) 
+		RETURNING id`
+
+	err = db.QueryRow(
+		query,
+		user.FirstName,
+		user.LastName,
+		user.Login,
+		string(hashedPassword),
+		user.Worksite,
+		user.Role,
+	).Scan(&user.ID)
+
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to insert user: %w", err)
 	}
 
 	return nil
 }
 
 func IsLogged(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("jwt_token")
-	if err != nil || cookie == nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	tokenString := cookie.Value
-
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method %v", token.Header["alg"])
-		}
-		return jwtKey, nil
-	})
-
-	if err != nil || !token.Valid {
-		http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
-		return
-	}
-
-	claims, ok := token.Claims.(*Claims)
-	if !ok {
-		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+	claims, err := validateToken(r)
+	if err != nil {
+		http.Error(w, err.Message, err.Code)
 		return
 	}
 
@@ -61,100 +79,34 @@ func IsLogged(w http.ResponseWriter, r *http.Request) {
 		"loggedIn": true,
 		"role":     claims.Role,
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	login := r.FormValue("login")
-	password := r.FormValue("password")
-
-	var user User
-	query := `SELECT id, first_name, last_name, password, role, worksite FROM users WHERE login = $1`
-
-	err := db.QueryRow(query, login).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Password, &user.Role, &user.Worksite)
-	if err == sql.ErrNoRows {
-		http.Redirect(w, r, "/?error=User%20not%20found", http.StatusSeeOther)
-		return
-	} else if err != nil {
-		http.Redirect(w, r, "/?error=Server%20error", http.StatusSeeOther)
-		return
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		http.Redirect(w, r, "/?error=Invalid%20password", http.StatusSeeOther)
-		return
-	}
-
-	expirationTime := time.Now().Add(4 * time.Hour)
-	claims := &Claims{
-		ID:        user.ID,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Role:      user.Role,
-		Worksite:  user.Worksite.String,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-			Issuer:    "tatraweb",
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	tokenString, err := token.SignedString(jwtKey)
+	user, err := authenticateUser(r.FormValue("login"), r.FormValue("password"))
 	if err != nil {
-		http.Redirect(w, r, "/?error=Error%20generating%20token", http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("/?error=%s", err.Message), http.StatusSeeOther)
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "jwt_token",
-		Value:    tokenString,
-		HttpOnly: true,
-		Expires:  expirationTime,
-		Path:     "/",
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
-	})
-
-	var redirectURL string
-	switch user.Role {
-	case "manager":
-		redirectURL = "/manager"
-	case "admin":
-		redirectURL = "/admin"
-	case "salesman":
-		redirectURL = "/salesman"
-	case "worker":
-		redirectURL = "/worker"
-	default:
-		redirectURL = "/"
+	token, err := generateToken(user)
+	if err != nil {
+		http.Redirect(w, r, fmt.Sprintf("/?error=%s", err.Message), http.StatusSeeOther)
+		return
 	}
 
-	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+	setAuthCookie(w, token)
+	redirectToUserDashboard(w, r, user.Role)
 }
 
 func Logout(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     "jwt_token",
-		Value:    "",
-		HttpOnly: true,
-		Expires:  time.Now().Add(-1 * time.Hour),
-		Path:     "/",
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
-	})
+	clearAuthCookie(w)
 
 	if r.Header.Get("HX-Request") == "true" {
-		tmpl, err := template.ParseFiles("./templates/logout_message.html")
-		if err != nil {
-			http.Error(w, "Error loading logout message: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		err = tmpl.Execute(w, nil)
-		if err != nil {
-			http.Error(w, "Error rendering logout message: "+err.Error(), http.StatusInternalServerError)
-			return
+		if err := renderLogoutMessage(w); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		return
 	}
@@ -164,29 +116,9 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 func RequireRole(role string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("jwt_token")
-		if err != nil || cookie == nil {
-			http.Error(w, "Missing token", http.StatusUnauthorized)
-			return
-		}
-
-		tokenString := cookie.Value
-
-		token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method %v", token.Header["alg"])
-			}
-			return jwtKey, nil
-		})
-
-		if err != nil || !token.Valid {
-			http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
-			return
-		}
-
-		claims, ok := token.Claims.(*Claims)
-		if !ok {
-			http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+		claims, err := validateToken(r)
+		if err != nil {
+			http.Error(w, err.Message, err.Code)
 			return
 		}
 
@@ -197,4 +129,125 @@ func RequireRole(role string, next http.HandlerFunc) http.HandlerFunc {
 
 		next(w, r)
 	}
+}
+
+func authenticateUser(login, password string) (*User, *AuthError) {
+	var user User
+	const query = `
+		SELECT id, first_name, last_name, password, role, worksite 
+		FROM users 
+		WHERE login = $1`
+
+	err := db.QueryRow(query, login).Scan(
+		&user.ID,
+		&user.FirstName,
+		&user.LastName,
+		&user.Password,
+		&user.Role,
+		&user.Worksite,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, newAuthError("User not found", http.StatusUnauthorized)
+	} else if err != nil {
+		return nil, newAuthError("Server error", http.StatusInternalServerError)
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		return nil, newAuthError("Invalid password", http.StatusUnauthorized)
+	}
+
+	return &user, nil
+}
+
+func generateToken(user *User) (string, *AuthError) {
+	claims := &Claims{
+		ID:        user.ID,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Role:      user.Role,
+		Worksite:  user.Worksite.String,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenDuration)),
+			Issuer:    tokenIssuer,
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		return "", newAuthError("Error generating token", http.StatusInternalServerError)
+	}
+
+	return tokenString, nil
+}
+
+func validateToken(r *http.Request) (*Claims, *AuthError) {
+	cookie, err := r.Cookie(tokenCookieName)
+	if err != nil || cookie == nil {
+		return nil, newAuthError("Missing token", http.StatusUnauthorized)
+	}
+
+	token, err := jwt.ParseWithClaims(cookie.Value, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method %v", token.Header["alg"])
+		}
+		return jwtKey, nil
+	})
+
+	if err != nil || !token.Valid {
+		return nil, newAuthError("Invalid or expired token", http.StatusUnauthorized)
+	}
+
+	claims, ok := token.Claims.(*Claims)
+	if !ok {
+		return nil, newAuthError("Invalid token claims", http.StatusUnauthorized)
+	}
+
+	return claims, nil
+}
+
+func setAuthCookie(w http.ResponseWriter, tokenString string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     tokenCookieName,
+		Value:    tokenString,
+		HttpOnly: true,
+		Expires:  time.Now().Add(tokenDuration),
+		Path:     "/",
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+	})
+}
+
+func clearAuthCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     tokenCookieName,
+		Value:    "",
+		HttpOnly: true,
+		Expires:  time.Now().Add(-1 * time.Hour),
+		Path:     "/",
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+	})
+}
+
+func renderLogoutMessage(w http.ResponseWriter) error {
+	tmpl, err := template.ParseFiles("./templates/logout_message.html")
+	if err != nil {
+		return fmt.Errorf("error loading logout message template: %w", err)
+	}
+
+	if err := tmpl.Execute(w, nil); err != nil {
+		return fmt.Errorf("error rendering logout message: %w", err)
+	}
+
+	return nil
+}
+
+func redirectToUserDashboard(w http.ResponseWriter, r *http.Request, role string) {
+	redirectURL, exists := roleRedirectMap[role]
+	if !exists {
+		redirectURL = "/"
+	}
+	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 }
