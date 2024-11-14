@@ -1,6 +1,6 @@
 async function checkIfLoggedIn() {
     try {
-        const response = await fetch('/isLogged', {
+        const response = await fetch('/status', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

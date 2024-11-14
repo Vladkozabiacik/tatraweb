@@ -9,19 +9,18 @@ func main() {
 	if err := InitDB(); err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
-
 	RegisterRoutes()
 	log.Println("Starting server on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 // newUser := User{
-// 	FirstName:   "Spravca",
-// 	LastName:    "Spravca",
-// 	Login:       "spravca",
-// 	Password:    "spravca",
-// 	Worksite_id: sql.NullInt64{Int64: 0, Valid: false},
-// 	RoleID:      2,
+// 	FirstName: "Spravca",
+// 	LastName:  "Spravca",
+// 	Login:     "spravca",
+// 	Password:  "spravca",
+// 	Worksite:  sql.NullString{String: "", Valid: false},
+// 	Role:      "manager",
 // }
 
 // if err := RegisterUserInDB(&newUser); err != nil {

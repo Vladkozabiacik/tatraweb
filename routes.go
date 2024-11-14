@@ -99,6 +99,9 @@ func (r *Router) registerAPIRoutes() {
 
 	// User management endpoints (require manager role)
 	// users := api.PathPrefix("/users").Subrouter()
-	r.Handle("/fetch-all-users", RequireRole(RoleManager, fetchAllUsers)).Methods(http.MethodGet)
-	r.Handle("/add-user", RequireRole(RoleManager, addUser)).Methods(http.MethodPost)
+	r.Handle("/fetch-all-users", RequireRole(RoleManager, FetchAllUsers)).Methods(http.MethodGet)
+	r.Handle("/add-user", RequireRole(RoleManager, AddUser)).Methods(http.MethodPost)
+	r.Handle("/get-user", RequireRole(RoleManager, GetUser)).Methods(http.MethodGet)
+	r.Handle("/edit-user", RequireRole(RoleManager, EditUser)).Methods(http.MethodPut)
+	r.Handle("/delete-user", RequireRole(RoleManager, DeleteUser)).Methods(http.MethodDelete)
 }
