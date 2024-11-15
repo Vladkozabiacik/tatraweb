@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"text/template"
 	"time"
@@ -33,7 +34,7 @@ type AuthError struct {
 	Code    int
 }
 
-func newAuthError(message string, code int) *AuthError {
+func NewAuthError(message string, code int) *AuthError {
 	return &AuthError{
 		Message: message,
 		Code:    code,
@@ -90,7 +91,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, fmt.Sprintf("/?error=%s", err.Message), http.StatusSeeOther)
 		return
 	}
-
 	token, err := generateToken(user)
 	if err != nil {
 		http.Redirect(w, r, fmt.Sprintf("/?error=%s", err.Message), http.StatusSeeOther)
@@ -148,13 +148,13 @@ func authenticateUser(login, password string) (*User, *AuthError) {
 	)
 
 	if err == sql.ErrNoRows {
-		return nil, newAuthError("User not found", http.StatusUnauthorized)
+		return nil, NewAuthError("User not found", http.StatusUnauthorized)
 	} else if err != nil {
-		return nil, newAuthError("Server error", http.StatusInternalServerError)
+		return nil, NewAuthError("Server error", http.StatusInternalServerError)
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return nil, newAuthError("Invalid password", http.StatusUnauthorized)
+		return nil, NewAuthError("Invalid password", http.StatusUnauthorized)
 	}
 
 	return &user, nil
@@ -176,7 +176,7 @@ func generateToken(user *User) (string, *AuthError) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
-		return "", newAuthError("Error generating token", http.StatusInternalServerError)
+		return "", NewAuthError("Error generating token", http.StatusInternalServerError)
 	}
 
 	return tokenString, nil
@@ -185,7 +185,7 @@ func generateToken(user *User) (string, *AuthError) {
 func validateToken(r *http.Request) (*Claims, *AuthError) {
 	cookie, err := r.Cookie(tokenCookieName)
 	if err != nil || cookie == nil {
-		return nil, newAuthError("Missing token", http.StatusUnauthorized)
+		return nil, NewAuthError("Missing token", http.StatusUnauthorized)
 	}
 
 	token, err := jwt.ParseWithClaims(cookie.Value, &Claims{}, func(token *jwt.Token) (interface{}, error) {
@@ -196,18 +196,19 @@ func validateToken(r *http.Request) (*Claims, *AuthError) {
 	})
 
 	if err != nil || !token.Valid {
-		return nil, newAuthError("Invalid or expired token", http.StatusUnauthorized)
+		return nil, NewAuthError("Invalid or expired token", http.StatusUnauthorized)
 	}
 
 	claims, ok := token.Claims.(*Claims)
 	if !ok {
-		return nil, newAuthError("Invalid token claims", http.StatusUnauthorized)
+		return nil, NewAuthError("Invalid token claims", http.StatusUnauthorized)
 	}
 
 	return claims, nil
 }
 
 func setAuthCookie(w http.ResponseWriter, tokenString string) {
+	log.Println(tokenString)
 	http.SetCookie(w, &http.Cookie{
 		Name:     tokenCookieName,
 		Value:    tokenString,

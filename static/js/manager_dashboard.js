@@ -14,7 +14,7 @@ function toggleWorksiteField() {
 function showEditModal(userId, userLogin) {
     const modal = document.getElementById('editModal');
     modal.classList.add('visible');
-    
+
     // Fetch user details using the correct endpoint
     fetch(`/get-user?id=${userId}`)
         .then(response => response.json())
@@ -24,7 +24,7 @@ function showEditModal(userId, userLogin) {
             document.getElementById('editLastName').value = user.lastName;
             document.getElementById('editLogin').value = user.login;
             document.getElementById('editPosition').value = user.role;
-            
+
             if (user.role === 'worker') {
                 document.getElementById('editWorksiteDiv').classList.remove('hidden');
                 document.getElementById('editWorksite').value = user.worksite;
@@ -42,17 +42,17 @@ function showEditModal(userId, userLogin) {
 function showDeleteModal(userId, userLogin) {
     const modal = document.getElementById('deleteModal');
     modal.classList.add('visible');
-    
+
     document.getElementById('deleteUserId').value = userId;
     document.getElementById('expectedLogin').value = userLogin;
-    
+
     const confirmInput = document.getElementById('confirmLogin');
     const deleteButton = document.querySelector('#deleteUserForm button');
-    
+
     confirmInput.value = '';
     deleteButton.disabled = true;
-    
-    confirmInput.addEventListener('input', function() {
+
+    confirmInput.addEventListener('input', function () {
         deleteButton.disabled = this.value !== userLogin;
     });
 }
@@ -61,7 +61,7 @@ function toggleEditWorksiteField() {
     const position = document.getElementById('editPosition').value;
     const worksiteDiv = document.getElementById('editWorksiteDiv');
     const worksiteSelect = document.getElementById('editWorksite');
-    
+
     if (position === 'worker') {
         worksiteDiv.classList.remove('visible');
         worksiteSelect.required = true;
@@ -73,13 +73,13 @@ function toggleEditWorksiteField() {
 
 // Close modal when clicking the close button or outside the modal
 document.querySelectorAll('.modal .close-button').forEach(button => {
-    button.addEventListener('click', function() {
+    button.addEventListener('click', function () {
         this.closest('.modal').classList.remove('visible');
     });
 });
 
 document.querySelectorAll('.modal').forEach(modal => {
-    modal.addEventListener('click', function(e) {
+    modal.addEventListener('click', function (e) {
         if (e.target === this) {
             this.classList.remove('visible');
         }
@@ -135,10 +135,10 @@ function initializeTable() {
     const headers = table.querySelectorAll('thead th');
     headers.forEach((header, index) => {
         if (header.classList.contains('no-sort')) return;
-        
+
         const newHeader = header.cloneNode(true);
         header.parentNode.replaceChild(newHeader, header);
-        
+
         newHeader.addEventListener('click', () => {
             console.log('Header clicked:', index);
             sortTable(index);
@@ -147,7 +147,7 @@ function initializeTable() {
 
     function sortTable(columnIndex) {
         const rows = Array.from(tbody.querySelectorAll('tr'));
-        
+
         if (sortState.column === columnIndex) {
             sortState.asc = !sortState.asc;
         } else {
@@ -163,13 +163,13 @@ function initializeTable() {
             const cellB = rowB.cells[columnIndex].textContent.trim();
 
             if (!isNaN(cellA) && !isNaN(cellB)) {
-                return sortState.asc ? 
-                    Number(cellA) - Number(cellB) : 
+                return sortState.asc ?
+                    Number(cellA) - Number(cellB) :
                     Number(cellB) - Number(cellA);
             }
 
-            return sortState.asc ? 
-                cellA.localeCompare(cellB) : 
+            return sortState.asc ?
+                cellA.localeCompare(cellB) :
                 cellB.localeCompare(cellA);
         });
 
@@ -182,18 +182,18 @@ function initializeTable() {
         const worksiteValue = document.getElementById('worksiteFilter')?.value.toLowerCase() || '';
 
         const rows = tbody.querySelectorAll('tr');
-        
+
         rows.forEach(row => {
             const cells = Array.from(row.cells);
             const rowText = cells.map(cell => cell.textContent.toLowerCase());
-            
-            const matchesSearch = searchValue === '' || 
+
+            const matchesSearch = searchValue === '' ||
                 rowText.some(text => text.includes(searchValue));
-            
-            const matchesRole = roleValue === '' || 
+
+            const matchesRole = roleValue === '' ||
                 (cells[4] && cells[4].textContent.toLowerCase().includes(roleValue));
-            
-            const matchesWorksite = worksiteValue === '' || 
+
+            const matchesWorksite = worksiteValue === '' ||
                 (cells[6] && cells[6].textContent.toLowerCase().includes(worksiteValue));
 
             row.style.display = matchesSearch && matchesRole && matchesWorksite ? '' : 'none';
@@ -207,12 +207,12 @@ function initializeTable() {
 
 document.addEventListener('DOMContentLoaded', initializeTable);
 
-document.body.addEventListener('htmx:afterOnLoad', function() {
+document.body.addEventListener('htmx:afterOnLoad', function () {
     console.log('HTMX content loaded');
     initializeTable();
 });
 
-document.body.addEventListener('htmx:afterSwap', function() {
+document.body.addEventListener('htmx:afterSwap', function () {
     console.log('HTMX content swapped');
     initializeTable();
 });
@@ -229,3 +229,10 @@ function toggleModal(modalId) {
     const modal = document.getElementById(modalId);
     modal.classList.toggle('visible');
 }
+
+htmx.on("htmx:configRequest", function (evt) {
+    console.log("HTMX request:", evt.detail);
+});
+htmx.on("htmx:responseError", function (evt) {
+    console.error("HTMX error:", evt.detail);
+});

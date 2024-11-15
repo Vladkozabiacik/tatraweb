@@ -1,0 +1,11 @@
+-- Create the products table
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    kc VARCHAR(50) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+	weight INTEGER NOT NULL,
+		
+    created_by INT NOT NULL REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

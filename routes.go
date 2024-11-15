@@ -104,4 +104,7 @@ func (r *Router) registerAPIRoutes() {
 	r.Handle("/get-user", RequireRole(RoleManager, GetUser)).Methods(http.MethodGet)
 	r.Handle("/edit-user", RequireRole(RoleManager, EditUser)).Methods(http.MethodPut)
 	r.Handle("/delete-user", RequireRole(RoleManager, DeleteUser)).Methods(http.MethodDelete)
+
+	r.Handle("/add-product", RequireRole(RoleManager, AddProduct)).Methods(http.MethodPost)
+	r.Handle("/fetch-all-products", RequireRole(RoleManager, FetchAllProducts)).Methods(http.MethodGet)
 }

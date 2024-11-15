@@ -15,7 +15,7 @@ body {
 
 /* Header and Navigation Bar */
 .header {
-    background-color: #007bff;
+    background-color: #2d2d2d;
     color: white;
     padding: 1rem;
     display: flex;
@@ -24,6 +24,7 @@ body {
     justify-content: space-between;
     min-height: 100vh;
     max-width: 30vh;
+    z-index: 100;
 }
 
 .header-content {
@@ -56,7 +57,7 @@ body {
 }
 
 .navbar a:hover {
-    color: #cce7ff;
+    color: #a0a0a0;
 }
 
 #logout-button {
@@ -91,7 +92,7 @@ body {
 
 .panel.visible {
     display: block;
-    animation: slide-in 0.4s ease-out;
+    animation: slide-in 0.6s ease-in;
 }
 
 /* Slide-in animation */
@@ -140,7 +141,7 @@ select {
 }
 
 .button {
-    background-color: #007bff;
+    background-color: #2d2d2d;
     color: white;
     padding: 0.75rem;
     border: none;
@@ -152,7 +153,7 @@ select {
 }
 
 .button:hover {
-    background-color: #0056b3;
+    background-color: #262626;
 }
 
 .filter-container,
@@ -182,7 +183,9 @@ th {
     font-weight: bold;
     color: #555;
 }
-
+.sortable {
+    cursor: pointer;
+}
 .table-wrapper {
     width: 100%;
     max-height: 90vh;
