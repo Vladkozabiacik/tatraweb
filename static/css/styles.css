@@ -86,14 +86,6 @@ body {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.panel {
-    display: none;
-}
-
-.panel.visible {
-    display: block;
-    animation: slide-in 0.6s ease-in;
-}
 
 /* Slide-in animation */
 @keyframes slide-in {

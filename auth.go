@@ -48,14 +48,13 @@ func RegisterUserInDB(user *User) error {
 	}
 
 	const query = `
-		INSERT INTO users (first_name, last_name, login, password, worksite, role) 
-		VALUES ($1, $2, $3, $4, $5, $6) 
+		INSERT INTO users (name, login, password, worksite, role) 
+		VALUES ($1, $2, $3, $4, $5) 
 		RETURNING id`
 
 	err = db.QueryRow(
 		query,
-		user.FirstName,
-		user.LastName,
+		user.Name,
 		user.Login,
 		string(hashedPassword),
 		user.Worksite,
@@ -123,30 +122,29 @@ func RequireRole(role string, next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if claims.Role != role {
+
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
-
 		next(w, r)
 	}
 }
 
 func authenticateUser(login, password string) (*User, *AuthError) {
+
 	var user User
 	const query = `
-		SELECT id, first_name, last_name, password, role, worksite 
-		FROM users 
-		WHERE login = $1`
+	SELECT id, name, password, role, worksite 
+	FROM users 
+	WHERE login = $1`
 
 	err := db.QueryRow(query, login).Scan(
 		&user.ID,
-		&user.FirstName,
-		&user.LastName,
+		&user.Name,
 		&user.Password,
 		&user.Role,
 		&user.Worksite,
 	)
-
 	if err == sql.ErrNoRows {
 		return nil, NewAuthError("User not found", http.StatusUnauthorized)
 	} else if err != nil {
@@ -162,11 +160,10 @@ func authenticateUser(login, password string) (*User, *AuthError) {
 
 func generateToken(user *User) (string, *AuthError) {
 	claims := &Claims{
-		ID:        user.ID,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Role:      user.Role,
-		Worksite:  user.Worksite.String,
+		ID:       user.ID,
+		Name:     user.Name,
+		Role:     user.Role,
+		Worksite: user.Worksite.String,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenDuration)),
 			Issuer:    tokenIssuer,

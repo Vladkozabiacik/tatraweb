@@ -99,12 +99,21 @@ func (r *Router) registerAPIRoutes() {
 
 	// User management endpoints (require manager role)
 	// users := api.PathPrefix("/users").Subrouter()
-	r.Handle("/fetch-all-users", RequireRole(RoleManager, FetchAllUsers)).Methods(http.MethodGet)
 	r.Handle("/add-user", RequireRole(RoleManager, AddUser)).Methods(http.MethodPost)
-	r.Handle("/get-user", RequireRole(RoleManager, GetUser)).Methods(http.MethodGet)
+	r.Handle("/get-user?{id}", RequireRole(RoleManager, GetUser)).Methods(http.MethodGet)
+	r.Handle("/fetch-all-users", RequireRole(RoleManager, FetchAllUsers)).Methods(http.MethodGet)
 	r.Handle("/edit-user", RequireRole(RoleManager, EditUser)).Methods(http.MethodPut)
-	r.Handle("/delete-user", RequireRole(RoleManager, DeleteUser)).Methods(http.MethodDelete)
+	r.Handle("/delete-user", RequireRole(RoleManager, DeleteUser)).Methods(http.MethodPost)
 
-	r.Handle("/add-product", RequireRole(RoleManager, AddProduct)).Methods(http.MethodPost)
-	r.Handle("/fetch-all-products", RequireRole(RoleManager, FetchAllProducts)).Methods(http.MethodGet)
+	r.Handle("/add-product", RequireRole(RoleSalesman, AddProduct)).Methods(http.MethodPost)
+	r.Handle("/fetch-all-products", RequireRole(RoleSalesman, FetchAllProducts)).Methods(http.MethodGet)
+
+	r.Handle("/add-customer", RequireRole(RoleSalesman, AddCustomer)).Methods(http.MethodPost)
+	r.Handle("/fetch-all-customers", RequireRole(RoleSalesman, FetchAllCustomers)).Methods(http.MethodGet)
+	// r.Handle("/get-customer?{id}", RequireRole(RoleManager, GetCustomer)).Methods(http.MethodGet)
+	// r.Handle("/edit-customer", RequireRole(RoleManager, EditCustomer)).Methods(http.MethodPut)
+
+	r.Handle("/add-order", RequireRole(RoleSalesman, AddOrder)).Methods(http.MethodPost)
+
+	r.Handle("/fetch-all-orders", RequireRole(RoleSalesman, FetchAllOrders)).Methods(http.MethodGet)
 }

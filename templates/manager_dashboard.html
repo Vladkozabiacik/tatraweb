@@ -13,13 +13,7 @@
     <header class="header">
         <div class="header-content">
             <h1>Správca</h1>
-            <nav class="navbar">
-                <a href="#" onclick="showPanel('home')">Home</a>
-                <a href="#" onclick="toggleModal('createUserModal')">Pridať používateľa</a>
-                <a href="#" onclick="showPanel('user-management')">Zoznam pouzivatelov</a>
-                <a href="#" onclick="toggleModal('createProductModal')">Pridať produkt</a>
-                <a href="#" onclick="showPanel('product-management')">Zoznam produktov</a>
-            </nav>
+
             <button hx-post="/logout" hx-target="body" hx-swap="outerHTML" id="logout-button">
                 Logout
             </button>
@@ -27,63 +21,13 @@
     </header>
 
     <main class="container">
-        <section id="home" class="panel visible">
-            <h2>Welcome to the Admin Panel</h2>
-            <p>Select an option from the menu to manage different sections.</p>
-        </section>
-
         <section id="user-management" class="panel table-wrapper">
-            <h2>Pouzivatelia</h2>
-            <table id="usersTable">
-                <thead>
-                    <tr>
-                        <th class="sortable">ID</th>
-                        <th class="sortable">Name</th>
-                        <th class="sortable">Surname</th>
-                        <th class="sortable">Login</th>
-                        <th class="sortable">Role</th>
-                        <th class="sortable">Date Created</th>
-                        <th class="sortable">Worksite</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody hx-get="/fetch-all-users" hx-target="#usersTable tbody" hx-trigger="load" hx-swap="outerHTML">
-                    <!-- Existing users will be loaded here -->
-                </tbody>
-            </table>
-        </section>
-
-        <section id="product-management" class="panel">
-            <h2>Produkty</h2>
-            <table id="productsTable">
-                <thead>
-                    <tr>
-                        <th class="sortable">K.C.</th>
-                        <th class="sortable">Name</th>
-                        <th class="sortable">Weight</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody hx-get="/fetch-all-products" hx-target="#productsTable tbody" hx-trigger="load"
-                    hx-swap="outerHTML">
-                    <!-- Existing products will be loaded here -->
-                </tbody>
-            </table>
-        </section>
-    </main>
-    <div id="createUserModal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-button" onclick="toggleModal('createUserModal')">&times;</span>
             <h2>Pridaj používateľa</h2>
             <form id="userForm" hx-post="/add-user" hx-trigger="submit" hx-target="#usersTable tbody"
                 hx-swap="outerHTML">
                 <div class="form-group">
-                    <label for="firstName">Meno:</label>
-                    <input type="text" id="firstName" name="firstName" required>
-                </div>
-                <div class="form-group">
-                    <label for="lastName">Priezvisko:</label>
-                    <input type="text" id="lastName" name="lastName" required>
+                    <label for="name">Meno a priezvisko:</label>
+                    <input type="text" id="name" name="name" required>
                 </div>
                 <div class="form-group">
                     <label for="login">Login:</label>
@@ -94,8 +38,8 @@
                     <input type="password" id="password" name="password" required>
                 </div>
                 <div class="form-group">
-                    <label for="position">Pozícia:</label>
-                    <select id="position" name="position" onchange="toggleWorksiteField()" required>
+                    <label for="role">Pozícia:</label>
+                    <select id="role" name="role" onchange="toggleWorksiteField()" required>
                         <option value="salesman">Obchoďák</option>
                         <option value="admin">AD pracovník</option>
                         <option value="worker">Výroba</option>
@@ -112,116 +56,26 @@
                 </div>
                 <button type="submit" class="button">Pridať používateľa</button>
             </form>
-        </div>
-    </div>
-    <div id="editModal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h2>Edit User</h2>
-            <form id="editUserForm" hx-put="/edit-user" hx-target="#usersTable tbody" hx-swap="outerHTML">
-                <input type="hidden" id="editUserId" name="userId">
-                <div class="form-group">
-                    <label for="editFirstName">Meno:</label>
-                    <input type="text" id="editFirstName" name="firstName" required>
-                </div>
-                <div class="form-group">
-                    <label for="editLastName">Priezvisko:</label>
-                    <input type="text" id="editLastName" name="lastName" required>
-                </div>
-                <div class="form-group">
-                    <label for="editLogin">Login:</label>
-                    <input type="text" id="editLogin" name="login" required>
-                </div>
-                <div class="form-group">
-                    <label for="editPassword">Heslo (nechajte prázdne ak nechcete zmeniť):</label>
-                    <input type="password" id="editPassword" name="password">
-                </div>
-                <div class="form-group">
-                    <label for="editPosition">Pozícia:</label>
-                    <select id="editPosition" name="position" onchange="toggleEditWorksiteField()" required>
-                        <option value="salesman">Obchoďák</option>
-                        <option value="admin">AD pracovník</option>
-                        <option value="worker">Výroba</option>
-                    </select>
-                </div>
-                <div id="editWorksiteDiv" class="form-group hidden">
-                    <label for="editWorksite">Pracovisko:</label>
-                    <select id="editWorksite" name="worksite">
-                        <option value="sypke">Sypké</option>
-                        <option value="pozivatiny">Poživatiny</option>
-                        <option value="kozmetika">Kozmetika</option>
-                        <option value="sklad">Sklad</option>
-                    </select>
-                </div>
-                <button type="submit" class="button">Uložiť zmeny</button>
-            </form>
-        </div>
-    </div>
-    <div id="createProductModal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-button" onclick="toggleModal('createProductModal')">&times;</span>
-            <h2>Pridaj produkt</h2>
-            <form id="productForm" hx-post="/add-product" hx-trigger="submit" hx-target="#productsTable tbody"
-                hx-swap="outerHTML">
-                <div class="form-group">
-                    <label for="kc">Kód produktu:</label>
-                    <input type="text" id="kc" name="kc" required>
-                </div>
-                <div class="form-group">
-                    <label for="name">Názov produktu:</label>
-                    <input type="text" id="name" name="name" required>
-                </div>
-                <div class="form-group">
-                    <label for="weightVolume">Hmotnosť/Objem:</label>
-                    <div class="weight-volume-container">
-                        <div class="input-group">
-                            <input type="number" id="weightVolume" name="weightVolume" step="0.01" min="0" required>
-                        </div>
-                        <div class="unit-group">
-                            <select id="weightType" name="weightType" required>
-                                <optgroup label="Hmotnosť">
-                                    <option value="g">g (gramy)</option>
-                                    <option value="kg">kg (kilogramy)</option>
-                                </optgroup>
-                                <optgroup label="Objem">
-                                    <option value="ml">ml (mililitre)</option>
-                                    <option value="l">l (litre)</option>
-                                </optgroup>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <button type="submit" class="button">Pridať produkt</button>
-            </form>
-        </div>
-    </div>
-<div id="editModal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h2>Edit User</h2>
-            <form id="editUserForm" hx-put="/edit-product" hx-target="#usersTable tbody" hx-swap="outerHTML">
-                <input type="hidden" id="editUserId" name="userId">
-                
-                <button type="submit" class="button">Uložiť zmeny</button>
-            </form>
-        </div>
-    </div>
+            <h2>Pouzivatelia</h2>
+            <table id="usersTable">
+                <thead>
+                    <tr>
+                        <th class="sortable">ID</th>
+                        <th class="sortable">Name</th>
+                        <th class="sortable">Login</th>
+                        <th class="sortable">Password</th>
+                        <th class="sortable">Role</th>
+                        <th class="sortable">Worksite</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody hx-get="/fetch-all-users" hx-target="#usersTable tbody" hx-trigger="load" hx-swap="outerHTML">
+                    <!-- Existing users will be loaded here -->
+                </tbody>
+            </table>
+        </section>
 
-    <div id="deleteModal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h2>Potvrďte vymazanie používateľa</h2>
-            <p>Pre potvrdenie vymazania používateľa, zadajte jeho login:</p>
-            <form id="deleteUserForm" hx-delete="/delete-user" hx-target="#usersTable tbody" hx-swap="outerHTML">
-                <input type="hidden" id="deleteUserId" name="userId">
-                <input type="hidden" id="expectedLogin" name="expectedLogin">
-                <div class="form-group">
-                    <input type="text" id="confirmLogin" name="confirmLogin" required>
-                </div>
-                <button type="submit" class="button delete-button" disabled>Vymazať používateľa</button>
-            </form>
-        </div>
-    </div>
+    </main>
     <script src="/static/js/manager_dashboard.js"></script>
 
 </body>
