@@ -119,6 +119,8 @@
                         .then(data => {
                             console.log('Objednávka bola priradená:', data);
                             loadOrders();
+                            loadProductionOrders();
+
                         })
                         .catch(error => {
                             console.error('Chyba pri priraďovaní objednávky:', error);
@@ -273,10 +275,13 @@
                 .then(orders => {
                     const tableBody = document.querySelector('#productionTable tbody');
                     tableBody.innerHTML = '';
+                    if (Array.isArray(orders)) { // Kontrola, či je 'orders' pole
+                        const tableBody = document.querySelector('#productionTable tbody');
+                        tableBody.innerHTML = '';
 
-                    orders.forEach(order => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
+                        orders.forEach(order => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
                     <td>${order.id}</td>
                     <td>${order.order_item.product_name}</td>
                     <td>${order.order_item.quantity}</td>
@@ -285,8 +290,11 @@
                     <td>${order.produced_by.Valid ? order.produced_by.Int64 : ''}</td>
                     <td>${order.status}</td>
                 `;
-                        tableBody.appendChild(row);
-                    });
+                            tableBody.appendChild(row);
+                        });
+                    } else {
+                        console.error('Odpoveď servera nie je pole:', orders);
+                    }
                 });
         }
 

@@ -96,25 +96,26 @@ func createOrderItem(orderID, productID, quantity int, deliveryDate string) erro
 // FetchAllOrders načíta všetky objednávky z databázy
 func FetchAllOrders(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query(`
-SELECT 
-    o.id, 
-    o.customer_id, 
-    c.name, 
-    o.created_at,
-    json_agg(json_build_object(
-        'id', oi.id,
-        'product_name', p.name,
-        'quantity', oi.quantity,
-        'delivery_date', oi.delivery_date
-    )) AS order_items,
-    u.name AS created_by_name  -- Select the name of the user who created the order
-FROM orders o
-JOIN customers c ON o.customer_id = c.id
-LEFT JOIN order_items oi ON o.id = oi.order_id
-LEFT JOIN products p ON oi.product_id = p.id
-LEFT JOIN users u ON o.created_by = u.id  -- Join with the users table using created_by
-GROUP BY o.id, c.name, u.name  -- Add u.name to GROUP BY
-ORDER BY o.created_at DESC
+		SELECT 
+			o.id, 
+			o.customer_id, 
+			c.name, 
+			o.created_at,
+			json_agg(json_build_object(
+				'id', oi.id,
+				'product_name', p.name,
+				'quantity', oi.quantity,
+				'delivery_date', oi.delivery_date
+			)) AS order_items,
+			u.name AS created_by_name 
+		FROM orders o
+		JOIN customers c ON o.customer_id = c.id
+		LEFT JOIN order_items oi ON o.id = oi.order_id
+		LEFT JOIN products p ON oi.product_id = p.id
+		LEFT JOIN users u ON o.created_by = u.id
+		WHERE o.id NOT IN (SELECT oi2.order_id FROM order_items oi2 WHERE oi2.id IN (SELECT order_item_id FROM production_orders))
+		GROUP BY o.id, c.name, u.name
+		ORDER BY o.created_at DESC
     `)
 	if err != nil {
 		http.Error(w, "Failed to fetch orders", http.StatusInternalServerError)
