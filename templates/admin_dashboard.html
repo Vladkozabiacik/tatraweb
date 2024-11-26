@@ -1,20 +1,298 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sk">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <script src="https://unpkg.com/htmx.org@1.8.4"></script>
+    <title>Administratívny Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .slide {
+            display: none;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        .dys {
+            display: none;
+        }
+    </style>
 </head>
 
 <body>
-    <form>
-        <form id="editUserForm" hx-put="/edit-user" hx-target="#usersTable tbody" hx-swap="outerHTML">
 
-            <button type="submit" class="button">Uložiť zmeny</button>
-        </form>
-    </form>
+    <h1>Administratívny Dashboard</h1>
+
+    <nav>
+        <button onclick="showSlide('orders')">Prijaté objednávky</button>
+        <button onclick="showSlide('new-order')">Nová objednávka</button>
+        <button onclick="showSlide('history')">História objednávok</button>
+        <button onclick="showSlide('production')">Položky vo výrobe</button>
+        <button onclick="showSlide('users')">Používatelia</button>
+    </nav>
+
+    <div id="content">
+        <div id="orders" class="slide active">
+            <h2>Prijaté objednávky</h2>
+            <div id="orders-container">
+                <table id="orders-table">
+                    <thead>
+                        <tr>
+                            <th>Zákazník</th>
+                            <th>Produkt</th>
+                            <th>Množstvo</th>
+                            <th>Dátum expedície</th>
+                            <th>Obchodník</th>
+                            <th>Pracovisko</th>
+                            <th>Akcia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+
+            <script>
+                function loadOrders() {
+                    fetch('/fetch-all-orders')
+                        .then(response => response.json())
+                        .then(orders => {
+                            const tableBody = document.querySelector('#orders-table tbody');
+                            tableBody.innerHTML = '';
+
+                            orders.forEach(order => {
+                                // Since an order can have multiple items, we'll create a row for each item
+                                order.order_items.forEach(item => {
+                                    const row = document.createElement('tr');
+                                    row.innerHTML = `
+                                    <td>${order.customer_name}</td>
+                                    <td><input type="text" value="${item.product_name}" hx-put="/edit-order" hx-target="closest tr" hx-swap="outerHTML"></td>
+                                    <td>${item.quantity}</td>
+                                    <td>${item.delivery_date}</td>
+                                    <td>${order.created_by}</td>  
+                                    <td>
+                                        <select id="worksiteSelect-${order.id}"> 
+                                            <option value="1">Prac 1 - Sypké</option>
+                                            <option value="2">Prac 2 - Poživatiny</option>
+                                            <option value="3">Prac 3 - Kozmetika</option>
+                                            <option value="4">Prac 4 - Sklad</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <button onclick="assignOrder(${order.id})">Zadať</button> 
+                                    </td>
+                                `;
+                                    tableBody.appendChild(row);
+                                });
+                            });
+                        });
+                }
+                function assignOrder(orderId) {
+                    var workplaceSelect = document.getElementById(`worksiteSelect-${orderId}`);
+                    var workplaceId = workplaceSelect.value;
+                    fetch('/assign-order-to-workplace', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            order_id: orderId,
+                            workplace_id: workplaceId
+                        })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Objednávka bola priradená:', data);
+                            loadOrders();
+                        })
+                        .catch(error => {
+                            console.error('Chyba pri priraďovaní objednávky:', error);
+                        });
+                }
+                loadOrders();
+            </script>
+        </div>
+
+        <div id="new-order" class="slide">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Nová objednávka</h5>
+                </div>
+                <div class="card-body">
+                    <form id="orderForm" hx-post="/add-order" hx-swap="none" hx-trigger="submit">
+                        <div>
+                            <label class="form-label" style="font-weight: bold;">Zákazník</label>
+                            <div class="input-group" style="display: flex; height: 100%;">
+                                <div style="width: 90%; height: 100%;" class="mb-4">
+                                    <select class="form-select customer-select" name="customer_id"
+                                        hx-get="/fetch-all-customers" hx-trigger="search">
+                                    </select>
+                                </div>
+                                <div id="newCustomerFormContainer" style="display: none;">
+                                    <div style="display: flex;">
+                                        <div>
+                                            <label for="customerName" class="form-label"
+                                                style="text-align: center; font-weight: bold;">Meno:</label>
+                                            <input type="text" class="form-control" id="customerName" name="name">
+                                        </div>
+                                        <button type="button" class="btn btn-primary" id="saveCustomerBtn"
+                                            style="height: 50%; align-self: flex-end;">Uložiť</button>
+                                    </div>
+                                    <p style="margin: 0; padding: 0;" class="mb-4">*pridanie noveho zakaznika</p>
+                                </div>
+                                <div>
+                                    <button class="btn btn-outline-secondary" type="button" id="clearCustomer"
+                                        style="display: none;">X</button>
+                                </div>
+                            </div>
+
+                            <div id="addProductFormContainer" style="display: flex;">
+                                <div style="display: flex;">
+                                    <div style="margin-right: 10px;">
+                                        <label for="productKc" class="form-label" style="font-weight: bold;">KC:</label>
+                                        <input type="text" class="form-control" id="productKc" name="kc">
+                                    </div>
+                                    <div style="margin-right: 10px;">
+                                        <label for="productName" class="form-label" style="font-weight: bold;">Nazov
+                                            produktu:</label>
+                                        <input type="text" class="form-control" id="productName" name="name">
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-primary" id="saveProductBtn"
+                                    style="height: 50%; align-self: flex-end;">Uložiť</button>
+                            </div>
+                            <p style="margin: 0; padding: 0;" class="mb-4">*pridanie noveho produktu</p>
+                        </div>
+
+                        <div id="products-container">
+                            <div class="product-row">
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label" style="font-weight: bold;">Produkt</label>
+                                        <select class="form-select product-select" name="products[]"
+                                            hx-get="/fetch-all-products" hx-trigger="search">
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <label class="form-label" style="font-weight: bold;">Množstvo</label>
+                                        <input type="number" class="form-control" name="quantities[]" min="1">
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label class="form-label">&nbsp;</label>
+                                        <button type="button" class="btn btn-outline-danger d-block w-100">X</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="button" id="addProduct" class="btn btn-link mt-2">
+                            + Pridať ďalší produkt
+                        </button>
+
+                        <div class="mb-4 mt-4">
+                            <label class="form-label" style="font-weight: bold;">Dátum expedície</label>
+                            <input type="date" class="form-control" name="shipping_date" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Odoslať objednávku</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="history" class="slide">
+            <h2>História objednávok</h2>
+        </div>
+
+        <div id="production" class="slide">
+            <h2>Položky vo výrobe</h2>
+            <table id="productionTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Produkt</th>
+                        <th>Množstvo</th>
+                        <th>Dátum expedície</th>
+                        <th>Pracovisko</th>
+                        <th>Vyrobené</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+
+            </table>
+        </div>
+
+        <div id="users" class="slide">
+            <h2>Pouzivatelia</h2>
+            <table id="usersTable">
+                <thead>
+                    <tr>
+                        <th class="sortable">ID</th>
+                        <th class="sortable">Name</th>
+                        <th class="sortable">Login</th>
+                        <th class="sortable">Password</th>
+                        <th class="sortable">Role</th>
+                        <th class="sortable">Worksite</th>
+                    </tr>
+                </thead>
+                <tbody hx-get="/fetch-all-users" hx-target="#usersTable tbody" hx-trigger="load" hx-swap="outerHTML">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function showSlide(slideId) {
+            // Hide all slides
+            const slides = document.querySelectorAll('.slide');
+            slides.forEach(slide => slide.classList.remove('active'));
+
+            // Show the selected slide
+            const selectedSlide = document.getElementById(slideId);
+            selectedSlide.classList.add('active');
+        }
+        function loadProductionOrders() {
+            fetch('/fetch-production-orders')
+                .then(response => response.json())
+                .then(orders => {
+                    const tableBody = document.querySelector('#productionTable tbody');
+                    tableBody.innerHTML = '';
+
+                    orders.forEach(order => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                    <td>${order.id}</td>
+                    <td>${order.order_item.product_name}</td>
+                    <td>${order.order_item.quantity}</td>
+                    <td>${order.order_item.delivery_date}</td>
+                    <td>${order.worksite}</td>
+                    <td>${order.produced_by.Valid ? order.produced_by.Int64 : ''}</td>
+                    <td>${order.status}</td>
+                `;
+                        tableBody.appendChild(row);
+                    });
+                });
+        }
+
+        loadProductionOrders();
+    </script>
+
 </body>
 
 </html>

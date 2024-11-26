@@ -37,26 +37,24 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	const query = `
-        INSERT INTO products (kc, name, created_by, created_at, updated_at) 
-        VALUES ($1, $2, $3, $4, $5) 
+        INSERT INTO products (kc, name) 
+        VALUES ($1, $2) 
         RETURNING id`
 
 	err = db.QueryRow(
 		query,
 		product.KC,
 		product.Name,
-		userID,
-		time.Now(),
-		time.Now(),
 	).Scan(&product.ID)
 
 	if err != nil {
+		log.Println(err)
 		http.Error(w, "Failed to insert product", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{"id": product.ID})
+	json.NewEncoder(w).Encode(map[string]interface{}{"id": product.ID, "kc": product.KC, "name": product.Name})
 }
 
 func GetProduct(w http.ResponseWriter, r *http.Request) {

@@ -23,7 +23,7 @@ func UserToHTML(user User) string {
             <td class="editable-cell" data-field="password"></td>
             <td class="editable-cell" data-field="role">%s</td>
             <td class="editable-cell" data-field="worksite">%s</td>
-            <td>
+            <td class="dys">
                 <button onclick="enableRowEdit(this.closest('tr'), event)" class="edit-btn">Upraviť</button>
                 <button onclick="deleteUser(%d)" class="delete-btn">Odstrániť</button>
             </td>

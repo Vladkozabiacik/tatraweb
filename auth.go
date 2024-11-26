@@ -113,7 +113,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
-func RequireRole(role string, next http.HandlerFunc) http.HandlerFunc {
+func RequireRole(roles []string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		claims, err := validateToken(r)
 		if err != nil {
@@ -121,11 +121,20 @@ func RequireRole(role string, next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		if claims.Role != role {
+		// Check if the user's role is in the allowed roles
+		roleAllowed := false
+		for _, role := range roles {
+			if claims.Role == role {
+				roleAllowed = true
+				break
+			}
+		}
 
+		if !roleAllowed {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
+
 		next(w, r)
 	}
 }

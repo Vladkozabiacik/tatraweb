@@ -16,10 +16,24 @@
         .select2-container {
             width: 100% !important;
         }
+
+        #orders-table {
+            overflow-y: auto;
+            max-height: 80vh;
+        }
     </style>
 </head>
 
 <body>
+    <header class="header">
+        <div class="header-content">
+            <h1>Obchodnik</h1>
+
+            <button hx-post="/logout" hx-target="body" hx-swap="outerHTML" id="logout-button">
+                Logout
+            </button>
+        </div>
+    </header>
     <div class="container mt-4">
         <div class="row">
             <div class="col-md-7">
@@ -29,13 +43,25 @@
                     </div>
                     <div class="card-body">
                         <form id="orderForm" hx-post="/add-order" hx-swap="none" hx-trigger="submit">
-                            <div class="mb-4">
-                                <label class="form-label">Zákazník</label>
+                            <div>
+                                <label class="form-label" style="font-weight: bold;">Zákazník</label>
                                 <div class="input-group" style="display: flex; height: 100%;">
-                                    <div style="width: 90%; height: 100%;">
+                                    <div style="width: 90%; height: 100%;" class="mb-4">
                                         <select class="form-select customer-select" name="customer_id"
                                             hx-get="/fetch-all-customers" hx-trigger="search">
                                         </select>
+                                    </div>
+                                    <div id="newCustomerFormContainer" style="display: none;">
+                                        <div style="display: flex;">
+                                            <div>
+                                                <label for="customerName" class="form-label"
+                                                    style="text-align: center; font-weight: bold;">Meno:</label>
+                                                <input type="text" class="form-control" id="customerName" name="name">
+                                            </div>
+                                            <button type="button" class="btn btn-primary" id="saveCustomerBtn"
+                                                style="height: 50%; align-self: flex-end;">Uložiť</button>
+                                        </div>
+                                        <p style="margin: 0; padding: 0;" class="mb-4">*pridanie noveho zakaznika</p>
                                     </div>
                                     <div>
                                         <button class="btn btn-outline-secondary" type="button" id="clearCustomer"
@@ -43,27 +69,36 @@
                                     </div>
                                 </div>
 
-                                <div id="newCustomerFormContainer" style="display: none;">
-                                    <div class="mb-3">
-                                        <label for="customerName" class="form-label">Meno:</label>
-                                        <input type="text" class="form-control" id="customerName" name="name">
+                                <div id="addProductFormContainer" style="display: flex;">
+                                    <div style="display: flex;">
+                                        <div style="margin-right: 10px;">
+                                            <label for="productKc" class="form-label"
+                                                style="font-weight: bold;">KC:</label>
+                                            <input type="text" class="form-control" id="productKc" name="kc">
+                                        </div>
+                                        <div style="margin-right: 10px;">
+                                            <label for="productName" class="form-label" style="font-weight: bold;">Nazov
+                                                produktu:</label>
+                                            <input type="text" class="form-control" id="productName" name="name">
+                                        </div>
                                     </div>
-                                    <button type="button" class="btn btn-primary" id="saveCustomerBtn">Uložiť</button>
+                                    <button type="button" class="btn btn-primary" id="saveProductBtn"
+                                        style="height: 50%; align-self: flex-end;">Uložiť</button>
                                 </div>
-
+                                <p style="margin: 0; padding: 0;" class="mb-4">*pridanie noveho produktu</p>
                             </div>
 
                             <div id="products-container">
                                 <div class="product-row">
                                     <div class="row">
                                         <div class="col-md-6 mb-2">
-                                            <label class="form-label">Produkt</label>
+                                            <label class="form-label" style="font-weight: bold;">Produkt</label>
                                             <select class="form-select product-select" name="products[]"
                                                 hx-get="/fetch-all-products" hx-trigger="search">
                                             </select>
                                         </div>
                                         <div class="col-md-4 mb-2">
-                                            <label class="form-label">Množstvo</label>
+                                            <label class="form-label" style="font-weight: bold;">Množstvo</label>
                                             <input type="number" class="form-control" name="quantities[]" min="1">
                                         </div>
                                         <div class="col-md-2 mb-2">
@@ -80,7 +115,7 @@
                             </button>
 
                             <div class="mb-4 mt-4">
-                                <label class="form-label">Dátum expedície</label>
+                                <label class="form-label" style="font-weight: bold;">Dátum expedície</label>
                                 <input type="date" class="form-control" name="shipping_date" required>
                             </div>
 
@@ -207,6 +242,39 @@
                 });
         }
         $(document).ready(function () {
+            // Add this to the existing jQuery document ready function
+            $('#saveProductBtn').on('click', function () {
+                const productKc = $('#productKc').val().trim();
+                const productName = $('#productName').val().trim();
+
+                if (!productKc || !productName) {
+                    alert('KC a názov produktu sú povinné.');
+                    return;
+                }
+
+                $.ajax({
+                    url: '/add-product',  // Endpoint na backende pre pridanie produktu
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        kc: productKc,
+                        name: productName
+                    }),
+                    success: function (response) {
+                        const newProduct = response;
+                        const newOption = new Option(
+                            `${newProduct.kc} - ${newProduct.name}`,
+                            newProduct.id,
+                            false,
+                            false
+                        );
+
+                        $('#productKc').val('');
+                        $('#productName').val('');
+                    }
+                });
+            });
+
             $('#saveCustomerBtn').on('click', function () {
                 const customerName = $('#customerName').val().trim();  // Získame meno zákazníka z inputu
 
@@ -393,11 +461,11 @@
                         <div class="product-row">
                             <div class="row">
                                 <div class="col-md-6 mb-2">
-                                    <label class="form-label">Produkt</label>
+                                    <label class="form-label" style="font-weight: bold;">Produkt</label>
                                     <select class="form-select product-select" name="products[]" hx-get="/fetch-all-products" hx-trigger="search"></select>
                                     </div>
                                     <div class="col-md-4 mb-2">
-                                        <label class="form-label">Množstvo</label>
+                                        <label class="form-label" style="font-weight: bold;">Množstvo</label>
                                         <input type="number" class="form-control" name="quantities[]" min="1">
                                         </div>
                                         <div class="col-md-2 mb-2">
