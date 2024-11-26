@@ -80,7 +80,6 @@ body {
     width: 100%;
     min-height: 100vh;
     height: 100%;
-    padding: 1.5rem;
     background-color: #ffffff;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -153,16 +152,16 @@ select {
     display: flex;
 }
 
-/* Table Styling */
 table {
     width: 100%;
     max-height: 100vh;
     overflow-y: auto;
+    overflow-x: auto; /* Enable horizontal scrolling */
+    max-width: 100%; /* Limit table width to screen width */
     border-collapse: collapse;
     margin-top: 1rem;
     background-color: #fafafa;
 }
-
 th,
 td {
     padding: 1rem;
@@ -175,9 +174,11 @@ th {
     font-weight: bold;
     color: #555;
 }
+
 .sortable {
     cursor: pointer;
 }
+
 .table-wrapper {
     width: 100%;
     max-height: 90vh;
@@ -244,10 +245,6 @@ th {
         font-size: 1.2rem;
     }
 
-    .container {
-        padding: 1rem;
-    }
-
     .navbar a {
         font-size: 0.9rem;
     }
@@ -255,5 +252,57 @@ th {
     #logout-button {
         font-size: 0.9rem;
         padding: 0.5rem;
+    }
+    #userTable { 
+        overflow-x: auto; /* Ensure horizontal scrolling on mobile */
+        /* You might want to add: */
+        /* display: block;  This makes the table behave more like a block element */
+        /* width: 100%;   This ensures the table takes up the full width of its container */
+    }
+}
+
+/* Responsive Tables */
+.table-wrapper {
+    display: block; /* Ensures table is treated as a block element */
+    width: 100%; /* Full width of the container */
+    overflow-x: auto; /* Enables horizontal scrolling */
+    overflow-y: hidden; /* Prevents unnecessary vertical overflow */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling for mobile devices */
+    margin-top: 1rem;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fafafa;
+    /* The table can remain styled for larger screens without issue */
+}
+
+th,
+td {
+    padding: 1rem;
+    border: 1px solid #ddd;
+    text-align: left;
+    white-space: nowrap; /* Prevents cell content from wrapping */
+}
+
+th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+    color: #555;
+}
+
+/* Mobile-Specific Adjustments */
+@media (max-width: 768px) {
+    th,
+    td {
+        padding: 0.75rem;
+        font-size: 0.9rem; /* Adjust text size for better readability */
+    }
+    table {
+        width: 100%; /* Ensures the table fits inside the scrolling container */
+    }
+    .table-wrapper {
+        border: 1px solid #ddd; /* Optional: Add a border to visually distinguish the scrollable area */
     }
 }

@@ -20,7 +20,7 @@ func UserToHTML(user User) string {
             <td>%d</td>
             <td class="editable-cell" data-field="name">%s</td>
             <td class="editable-cell" data-field="login">%s</td>
-            <td class="editable-cell" data-field="password"></td>
+            <td class="editable-cell slepec" data-field="password"></td>
             <td class="editable-cell" data-field="role">%s</td>
             <td class="editable-cell" data-field="worksite">%s</td>
             <td class="dys">

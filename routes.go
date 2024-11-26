@@ -105,17 +105,28 @@ func (r *Router) registerAPIRoutes() {
 	r.Handle("/edit-user", RequireRole([]string{RoleManager}, EditUser)).Methods(http.MethodPut)
 	r.Handle("/delete-user", RequireRole([]string{RoleManager}, DeleteUser)).Methods(http.MethodPost)
 
-	r.Handle("/add-product", RequireRole([]string{RoleSalesman}, AddProduct)).Methods(http.MethodPost)
-	r.Handle("/fetch-all-products", RequireRole([]string{RoleSalesman}, FetchAllProducts)).Methods(http.MethodGet)
+	r.Handle("/add-product", RequireRole([]string{RoleSalesman, RoleAdmin}, AddProduct)).Methods(http.MethodPost)
+	r.Handle("/fetch-all-products", RequireRole([]string{RoleSalesman, RoleAdmin}, FetchAllProducts)).Methods(http.MethodGet)
 
-	r.Handle("/add-customer", RequireRole([]string{RoleSalesman}, AddCustomer)).Methods(http.MethodPost)
-	r.Handle("/fetch-all-customers", RequireRole([]string{RoleSalesman}, FetchAllCustomers)).Methods(http.MethodGet)
+	r.Handle("/add-customer", RequireRole([]string{RoleSalesman, RoleAdmin}, AddCustomer)).Methods(http.MethodPost)
+	r.Handle("/fetch-all-customers", RequireRole([]string{RoleSalesman, RoleAdmin}, FetchAllCustomers)).Methods(http.MethodGet)
 	// r.Handle("/get-customer?{id}", RequireRole([]string{RoleManager}, GetCustomer)).Methods(http.MethodGet)
 	// r.Handle("/edit-customer", RequireRole([]string{RoleManager}, EditCustomer)).Methods(http.MethodPut)
 
-	r.Handle("/add-order", RequireRole([]string{RoleSalesman}, AddOrder)).Methods(http.MethodPost)
+	r.Handle("/add-order", RequireRole([]string{RoleSalesman, RoleAdmin}, AddOrder)).Methods(http.MethodPost)
+	r.Handle("/edit-order", RequireRole([]string{RoleSalesman, RoleAdmin}, EditOrder)).Methods(http.MethodPut)
 	r.Handle("/assign-order-to-workplace", RequireRole([]string{RoleAdmin}, AssignOrderToWorksite)).Methods(http.MethodPost)
-	r.Handle("/fetch-production-orders", RequireRole([]string{RoleAdmin, RoleManager}, FetchProductionOrders)).Methods(http.MethodGet)
+	r.Handle("/fetch-production-orders", RequireRole([]string{RoleAdmin, RoleSalesman}, FetchProductionOrders)).Methods(http.MethodGet)
 
-	r.Handle("/fetch-all-orders", RequireRole([]string{RoleAdmin, RoleManager}, FetchAllOrders)).Methods(http.MethodGet)
+	r.Handle("/fetch-completed-orders", RequireRole([]string{RoleAdmin, RoleSalesman}, FetchCompletedOrders)).Methods(http.MethodGet)
+
+	r.Handle("/fetch-all-orders", RequireRole([]string{RoleAdmin, RoleSalesman}, FetchAllOrders)).Methods(http.MethodGet)
+	r.Handle("/fetch-all-orders-for-salesman", RequireRole([]string{RoleAdmin, RoleSalesman}, FetchAllOrdersForSalesman)).Methods(http.MethodGet)
+
+	// r.Handle("/get-worker-workplace", RequireRole([]string{RoleWorker}, GetWorkerWorkplace)).Methods(http.MethodGet)
+	r.Handle("/fetch-production-orders-for-worksite", RequireRole([]string{RoleWorker}, FetchProductionOrdersForWorksite)).Methods(http.MethodGet)
+	r.Handle("/fetch-completed-orders-for-worksite", RequireRole([]string{RoleWorker}, FetchProductionOrdersCompleted)).Methods(http.MethodGet)
+
+	// r.Handle("/get-worker-history", RequireRole([]string{RoleWorker}, GetWorkerHistory)).Methods(http.MethodGet)
+	r.Handle("/mark-order-as-completed/{prikazId}", RequireRole([]string{RoleWorker}, MarkOrderAsCompleted)).Methods(http.MethodGet)
 }

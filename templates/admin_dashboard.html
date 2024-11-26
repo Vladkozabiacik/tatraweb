@@ -6,7 +6,10 @@
     <title>Administratívny Dashboard</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.10/htmx.min.js"></script>
     <style>
         table {
             width: 100%;
@@ -31,13 +34,59 @@
         .dys {
             display: none;
         }
+
+        .slepec {
+            display: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .slide {
+            display: none;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        .dys {
+            display: none;
+        }
+
+        .slepec {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+
+            body {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 
 <body>
 
-    <h1>Administratívny Dashboard</h1>
+    <header class="header">
+        <div class="header-content">
+            <h1>Administrativny pracovnik</h1>
 
+            <button hx-post="/logout" hx-target="body" hx-swap="outerHTML" id="logout-button">
+                Logout
+            </button>
+        </div>
+    </header>
     <nav>
         <button onclick="showSlide('orders')">Prijaté objednávky</button>
         <button onclick="showSlide('new-order')">Nová objednávka</button>
@@ -76,30 +125,129 @@
                             tableBody.innerHTML = '';
 
                             orders.forEach(order => {
-                                // Since an order can have multiple items, we'll create a row for each item
                                 order.order_items.forEach(item => {
                                     const row = document.createElement('tr');
                                     row.innerHTML = `
-                                    <td>${order.customer_name}</td>
-                                    <td><input type="text" value="${item.product_name}" hx-put="/edit-order" hx-target="closest tr" hx-swap="outerHTML"></td>
-                                    <td>${item.quantity}</td>
-                                    <td>${item.delivery_date}</td>
-                                    <td>${order.created_by}</td>  
-                                    <td>
-                                        <select id="worksiteSelect-${order.id}"> 
-                                            <option value="1">Prac 1 - Sypké</option>
-                                            <option value="2">Prac 2 - Poživatiny</option>
-                                            <option value="3">Prac 3 - Kozmetika</option>
-                                            <option value="4">Prac 4 - Sklad</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <button onclick="assignOrder(${order.id})">Zadať</button> 
-                                    </td>
-                                `;
+                                        <td class="customer-name">${order.customer_name}</td>
+                                        <td class="product-name">${item.product_name}</td>
+                                        <td class="quantity">${item.quantity}</td>
+                                        <td class="delivery-date">${item.delivery_date}</td>
+                                        <td class="created-by">${order.created_by}</td>
+                                        <td>
+                                            <select class="worksite-select" data-order-id="${order.id}" id="worksiteSelect-${order.id}">
+                                                <option value="1">Prac 1 - Sypké</option>
+                                                <option value="2">Prac 2 - Poživatiny</option>
+                                                <option value="3">Prac 3 - Kozmetika</option>
+                                                <option value="4">Prac 4 - Sklad</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <button class="edit-btn" data-order-id="${order.id}">Upraviť</button>
+                                            <button class="assign-btn" data-order-id="${order.id}">Priradiť pracovisku</button>
+                                            <button class="save-btn dys" data-order-id="${order.id}">Uložiť</button> 
+                                            <button class="cancel-btn dys" data-order-id="${order.id}">Zrušiť</button>
+                                        </td>
+                                    `;
                                     tableBody.appendChild(row);
+
+                                    // Pridaj event listener pre tlačidlo "Upraviť"
+                                    const editBtn = row.querySelector('.edit-btn');
+                                    editBtn.addEventListener('click', () => {
+                                        toggleEdit(order.id);
+                                    });
+                                    const assignBtn = row.querySelector('.assign-btn');
+                                    assignBtn.addEventListener('click', () => {
+                                        assignOrder(order.id);
+                                    });
+
+                                    // Pridaj event listener pre tlačidlo "Uložiť"
+                                    const saveBtn = row.querySelector('.save-btn');
+                                    saveBtn.addEventListener('click', () => {
+                                        saveOrder(order.id);
+                                    });
+
+                                    // Pridaj event listener pre tlačidlo "Zrušiť"
+                                    const cancelBtn = row.querySelector('.cancel-btn');
+                                    cancelBtn.addEventListener('click', () => {
+                                        toggleEdit(order.id);
+                                    });
                                 });
                             });
+                        });
+                }
+
+                function toggleEdit(orderId) {
+                    const row = document.querySelector(`[data-order-id="${orderId}"]`).closest('tr');
+                    const productName = row.querySelector('.product-name');
+                    const quantity = row.querySelector('.quantity');
+                    const deliveryDate = row.querySelector('.delivery-date');
+                    const worksiteSelect = row.querySelector('.worksite-select');
+
+                    const editBtn = row.querySelector('.edit-btn');
+                    const assignBtn = row.querySelector('.assign-btn'); // Pridané pre assign button
+                    const saveBtn = row.querySelector('.save-btn');
+                    const cancelBtn = row.querySelector('.cancel-btn');
+
+                    if (editBtn.classList.contains('dys')) {
+                        // Režim uloženia
+                        productName.innerHTML = productName.firstElementChild.value;
+                        quantity.innerHTML = quantity.firstElementChild.value;
+                        deliveryDate.innerHTML = deliveryDate.firstElementChild.value;
+
+                        editBtn.classList.remove('dys');
+                        assignBtn.classList.remove('dys'); // Zobrazenie assign button
+                        saveBtn.classList.add('dys');
+                        cancelBtn.classList.add('dys');
+
+                        worksiteSelect.disabled = false; // Povolenie worksite select
+
+                        // Tu by ste mali poslať AJAX request na uloženie zmien
+                        saveOrder(orderId);
+
+                    } else {
+                        // Režim úpravy
+                        productName.innerHTML = `<input type="text" value="${productName.textContent}">`;
+                        quantity.innerHTML = `<input type="number" value="${quantity.textContent}">`;
+                        deliveryDate.innerHTML = `<input type="date" value="${deliveryDate.textContent}">`;
+
+                        editBtn.classList.add('dys');
+                        assignBtn.classList.add('dys'); // Skrytie assign button
+                        saveBtn.classList.remove('dys');
+                        cancelBtn.classList.remove('dys');
+
+                        worksiteSelect.disabled = true; // Zakázanie worksite select
+                    }
+                }
+
+                function saveOrder(orderId) {
+                    const row = document.querySelector(`[data-order-id="${orderId}"]`).closest('tr');
+                    const productName = row.querySelector('.product-name input')?.value || row.querySelector('.product-name').textContent;
+                    const quantity = row.querySelector('.quantity input')?.value || row.querySelector('.quantity').textContent;
+                    const deliveryDate = row.querySelector('.delivery-date input')?.value || row.querySelector('.delivery-date').textContent;
+                    const createdBy = row.querySelector('.created-by')?.value || row.querySelector('.created-by').textContent;
+                    const worksite_id = row.querySelector('.worksite-select').value;
+
+                    fetch('/edit-order', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            order_id: orderId,
+                            product_name: productName,
+                            quantity: quantity,
+                            delivery_date: deliveryDate,
+                            created_by: createdBy,
+                            worksite_id: worksite_id
+                        })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Objednávka bola upravená:', data);
+                            loadOrders(); // Obnov tabuľku objednávok
+                        })
+                        .catch(error => {
+                            console.error('Chyba pri úprave objednávky:', error);
                         });
                 }
                 function assignOrder(orderId) {
@@ -219,8 +367,23 @@
 
         <div id="history" class="slide">
             <h2>História objednávok</h2>
-        </div>
 
+            <table id="historyTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Produkt</th>
+                        <th>Množstvo</th>
+                        <th>Dátum expedície</th>
+                        <th>Pracovisko</th>
+                        <th>Vyrobené</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+
+            </table>
+        </div>
         <div id="production" class="slide">
             <h2>Položky vo výrobe</h2>
             <table id="productionTable">
@@ -248,7 +411,6 @@
                         <th class="sortable">ID</th>
                         <th class="sortable">Name</th>
                         <th class="sortable">Login</th>
-                        <th class="sortable">Password</th>
                         <th class="sortable">Role</th>
                         <th class="sortable">Worksite</th>
                     </tr>
@@ -299,6 +461,310 @@
         }
 
         loadProductionOrders();
+        function loadCompletedOrders() {
+            fetch('/fetch-completed-orders')
+                .then(response => response.json())
+                .then(orders => {
+                    const tableBody = document.querySelector('#historyTable tbody');
+                    tableBody.innerHTML = '';
+                    if (Array.isArray(orders)) { // Kontrola, či je 'orders' pole
+                        const tableBody = document.querySelector('#historyTable tbody');
+                        tableBody.innerHTML = '';
+                        orders.forEach(order => {
+                            console.log(order)
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                    <td>${order.id}</td>
+                    <td>${order.order_item.product_name}</td>
+                    <td>${order.order_item.quantity}</td>
+                    <td>${order.order_item.delivery_date}</td>
+                    <td>${order.worksite}</td>
+                    <td>${order.produced_by_name}</td>
+                    <td>${order.status}</td>
+                `;
+                            tableBody.appendChild(row);
+                        });
+                    } else {
+                        console.error('Odpoveď servera nie je pole:', orders);
+                    }
+                });
+        }
+        loadCompletedOrders();
+
+    </script>
+    <script>
+
+        $(document).ready(function () {
+            // Add this to the existing jQuery document ready function
+            $('#saveProductBtn').on('click', function () {
+                const productKc = $('#productKc').val().trim();
+                const productName = $('#productName').val().trim();
+
+                if (!productKc || !productName) {
+                    alert('KC a názov produktu sú povinné.');
+                    return;
+                }
+
+                $.ajax({
+                    url: '/add-product',  // Endpoint na backende pre pridanie produktu
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        kc: productKc,
+                        name: productName
+                    }),
+                    success: function (response) {
+                        const newProduct = response;
+                        const newOption = new Option(
+                            `${newProduct.kc} - ${newProduct.name}`,
+                            newProduct.id,
+                            false,
+                            false
+                        );
+
+                        $('#productKc').val('');
+                        $('#productName').val('');
+                    }
+                });
+            });
+
+            $('#saveCustomerBtn').on('click', function () {
+                const customerName = $('#customerName').val().trim();  // Získame meno zákazníka z inputu
+
+                if (!customerName) {
+                    alert('Meno zákazníka je povinné.');
+                    return;  // Nepokračujeme, ak je meno prázdne
+                }
+
+                // Odošleme meno zákazníka na backend pomocou POST
+                $.ajax({
+                    url: '/add-customer',  // Endpoint na backende pre pridanie zákazníka
+                    method: 'POST',
+                    contentType: 'application/json',  // Nastavíme content type na JSON
+                    data: JSON.stringify({ name: customerName }),  // Konvertujeme dáta na JSON
+                    success: function (response) {
+                        // Spracujeme úspech, pridáme nového zákazníka do select listu
+                        const newCustomer = response;  // Predpokladáme, že backend posiela informácie o zákazníkovi (id a meno)
+                        const newOption = new Option(newCustomer.name, newCustomer.id, true, true);
+                        $('.customer-select').append(newOption).trigger('change');  // Pridáme nového zákazníka do select dropdownu
+
+                        // Automaticky vyberieme nového zákazníka
+                        $('.customer-select').val(newCustomer.id).trigger('change');
+
+                        // Skryjeme formulár pre nového zákazníka
+                        $('#newCustomerFormContainer').hide();
+
+                        // Voliteľne resetujeme input pole
+                        $('#customerName').val('');
+                    },
+                    error: function () {
+                        alert('Chyba pri pridávaní zákazníka.');
+                    }
+                });
+            });
+            $('#newCustomerFormContainer').show(); // Zobrazíme formulár pre pridanie zákazníka
+            $('.customer-select').on('change', function () {
+                if ($(this).val() === null) {
+                    $('#newCustomerFormContainer').show();
+                    $('#clearCustomer').hide();
+                } else {
+                    $('#newCustomerFormContainer').hide();
+                    $('#clearCustomer').show();
+                }
+            });
+
+            // Odstránenie vybraného zákazníka
+            $('#clearCustomer').on('click', function () {
+                $('.customer-select').val(null).trigger('change');
+            });
+
+            // Spracovanie formulára pre pridanie zákazníka
+            document.body.addEventListener('htmx:afterRequest', function (evt) {
+                if (evt.detail.successful && evt.detail.elt.id === 'newCustomerForm') {
+                    // Pridáme nového zákazníka do Select2
+                    const newCustomer = evt.detail.xhr.response;
+                    const newOption = new Option(newCustomer.name, newCustomer.id, true, true);
+                    $('.customer-select').append(newOption).trigger('change');
+
+                    // Skryjeme formulár
+                    $('#newCustomerFormContainer').hide();
+                }
+                loadOrders()
+                loadCompletedOrders();
+                loadProductionOrders();
+            });
+            function initCustomerSelect(element) {
+                $(element).select2({
+                    placeholder: 'Vyhľadať zákazníka...',
+                    minimumInputLength: 2,
+                    ajax: {
+                        url: '/fetch-all-customers',
+                        delay: 250,
+                        data: function (params) {
+                            return {
+                                term: params.term,
+                                page: params.page
+                            };
+                        },
+                        processResults: function (data, params) {
+                            params.page = params.page || 1;
+
+                            return {
+                                results: data.results.map(customer => ({
+                                    id: customer.id,
+                                    text: customer.name
+                                })),
+                                pagination: {
+                                    more: (params.page * 30) < data.total_count
+                                }
+                            };
+                        },
+                        cache: true
+                    },
+                    escapeMarkup: function (markup) { return markup; },
+                    minimumInputLength: 1,
+                    templateResult: formatRepoCustomer,
+                    templateSelection: formatRepoSelectionCustomer
+                });
+            }
+
+            function formatRepoCustomer(repo) {
+                if (repo.loading) {
+                    return repo.text;
+                }
+
+                var markup = "<div class='select2-result-repository clearfix'>" +
+                    "<div class='select2-result-repository__meta'>" +
+                    "<div class='select2-result-repository__title'>" + repo.text + "</div>";
+
+                markup += "</div></div>";
+
+                return markup;
+            }
+
+            function formatRepoSelectionCustomer(repo) {
+                return repo.text || repo.text;
+            }
+
+            // Inicializácia existujúcich zákazníkov
+            $('.customer-select').each(function () {
+                initCustomerSelect(this);
+            });
+
+
+            function initProductSelect(element) {
+                $(element).select2({
+                    placeholder: 'Vyhľadať produkt...',
+                    minimumInputLength: 2,
+                    ajax: {
+                        url: '/fetch-all-products',
+                        delay: 250,
+                        data: function (params) {
+                            return {
+                                term: params.term,
+                                page: params.page
+                            };
+                        },
+                        processResults: function (data, params) {
+                            params.page = params.page || 1;
+
+                            return {
+                                results: data.results.map(product => ({
+                                    id: product.id,
+                                    text: `${product.kc} - ${product.name}`
+                                })),
+                                pagination: {
+                                    more: (params.page * 30) < data.total_count
+                                }
+                            };
+                        },
+                        cache: true
+                    },
+                    escapeMarkup: function (markup) { return markup; },
+                    minimumInputLength: 1,
+                    templateResult: formatRepoProduct,
+                    templateSelection: formatRepoSelectionProduct
+                });
+            }
+
+            function formatRepoProduct(repo) {
+                if (repo.loading) {
+                    return repo.text;
+                }
+
+                var markup = "<div class='select2-result-repository clearfix'>" +
+                    "<div class='select2-result-repository__meta'>" +
+                    "<div class='select2-result-repository__title'>" + repo.text + "</div>";
+
+                markup += "</div></div>";
+
+                return markup;
+            }
+
+            function formatRepoSelectionProduct(repo) {
+                return repo.text || repo.text;
+            }
+
+            // Inicializácia existujúcich produktov
+            $('.product-select').each(function () {
+                initProductSelect(this);
+            });
+
+            // Pridanie nového produktového riadku
+            $('#addProduct').click(function () {
+                const newRow = `
+                            <div class="product-row">
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label" style="font-weight: bold;">Produkt</label>
+                                        <select class="form-select product-select" name="products[]" hx-get="/fetch-all-products" hx-trigger="search"></select>
+                                        </div>
+                                        <div class="col-md-4 mb-2">
+                                            <label class="form-label" style="font-weight: bold;">Množstvo</label>
+                                            <input type="number" class="form-control" name="quantities[]" min="1">
+                                            </div>
+                                            <div class="col-md-2 mb-2">
+                                                <label class="form-label">&nbsp;</label>
+                                                <button type="button" class="btn btn-outline-danger d-block w-100">X</button>
+                                                </div>
+                                                </div>
+                                                </div>
+                                                `;
+
+                $('#products-container').append(newRow);
+
+                // Inicializácia Select2 v novom riadku
+                $('#products-container .product-row:last .product-select').each(function () {
+                    initProductSelect(this);
+                });
+            });
+            // Odstránenie produktového riadku
+            $(document).on('click', '.btn-outline-danger', function () {
+                if ($('#products-container .product-row').length > 1) {
+                    $(this).closest('.product-row').remove();
+                }
+            });
+
+            // Spracovanie formulára
+            document.body.addEventListener('htmx:afterRequest', function (evt) {
+                if (evt.detail.successful && evt.detail.elt.id === 'orderForm') {
+                    $('#orderForm')[0].reset();
+                    $('.customer-select').val(null).trigger('change');
+                    $('.product-select').val(null).trigger('change');
+                    const firstRow = $('#products-container .product-row:first');
+                    $('#products-container .product-row:not(:first)').remove();
+                    document.body.dispatchEvent(new Event('orderCreated'));
+                }
+            });
+            document.addEventListener('DOMContentLoaded', loadOrders());
+        });
+        document.body.addEventListener('htmx:afterRequest', function (evt) {
+            if (evt.detail.successful && evt.detail.elt.id === 'orderForm') {
+                loadOrders();
+                loadCompletedOrders();
+                loadProductionOrders();
+            }
+        });
     </script>
 
 </body>

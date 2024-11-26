@@ -160,7 +160,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.10/htmx.min.js"></script>
     <script>
         function fetchOrders() {
-            fetch('/fetch-all-orders')
+            fetch('/fetch-all-orders-for-salesman')
                 .then(response => response.json())
                 .then(orders => {
                     const tableBody = document.getElementById('orders-table');
@@ -241,6 +241,7 @@
                     tableBody.appendChild(table);
                 });
         }
+        
         $(document).ready(function () {
             // Add this to the existing jQuery document ready function
             $('#saveProductBtn').on('click', function () {

@@ -67,6 +67,7 @@ type ProductionOrder struct {
 	Worksite       string        `json:"worksite"`
 	Status         string        `json:"status"`
 	ProducedBy     sql.NullInt64 `json:"produced_by"`
-	ProductionDate time.Time     `json:"production_date"`
+	ProducedByName string        `json:"produced_by_name"`
+	ProductionDate sql.NullTime  `json:"production_date"`
 	CreatedAt      time.Time     `json:"created_at"`
 }

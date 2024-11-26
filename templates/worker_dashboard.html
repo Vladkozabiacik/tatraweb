@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="sk">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Výrobný Dashboard</title>
+  <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f0f0f0;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="header">
+    <div class="header-content">
+      <h1 style="margin: 0; padding: 5px;">Vyrobca</h1>
+
+      <button hx-post="/logout" hx-target="body" hx-swap="outerHTML" id="logout-button">
+        Logout
+      </button>
+    </div>
+  </header>
+  <div id="pracovisko">
+  </div>
+
+  <h2>Výrobné príkazy</h2>
+
+  <div id="vyrobnePrikazy">
+    <table id="prikazyTable">
+      <thead>
+        <tr>
+          <th>Zákazník</th>
+          <th>Produkt</th>
+          <th>Množstvo</th>
+          <th>Dátum expedície</th>
+          <th>Akcia</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>História</h2>
+
+  <div id="historia">
+    <table id="historiaTable">
+      <thead>
+        <tr>
+          <th>Zákazník</th>
+          <th>Produkt</th>
+          <th>Množstvo</th>
+          <th>Dátum expedície</th>
+          <th>Vyrobene dna</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    function loadProductionOrders() {
+      fetch('/fetch-production-orders-for-worksite')
+        .then(response => response.json())
+        .then(orders => {
+          if (Array.isArray(orders)) {
+            const tableBody = document.querySelector('#prikazyTable tbody');
+            tableBody.innerHTML = '';
+
+            orders.forEach(order => {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                                    <td>${order.id}</td>
+                                    <td>${order.order_item.product_name}</td>
+                                    <td>${order.order_item.quantity}</td>
+                                    <td>${order.order_item.delivery_date}</td>
+                                    <td><button onclick="submitOrder(${order.id})">Odoslať</button></td>
+                                `;
+              tableBody.appendChild(row);
+            });
+          } else {
+            console.error('Odpoveď servera nie je pole:', orders);
+          }
+        });
+    }
+
+    function submitOrder(orderId) {
+      fetch(`/mark-order-as-completed/${orderId}`, {
+        method: 'GET'
+      })
+        .then(response => {
+          if (response.ok) {
+            console.log('Objednávka označená ako dokončená');
+            loadProductionOrders();
+          } else {
+            console.error('Chyba pri označovaní objednávky');
+          }
+        })
+        .catch(error => {
+          console.error('Chyba pri označovaní objednávky:', error);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', (event) => {
+      loadProductionOrders();
+    });
+    function loadCompletedOrders() {
+  fetch('/fetch-completed-orders-for-worksite')
+    .then(response => response.json())
+    .then(orders => {
+      if (Array.isArray(orders)) {
+        const tableBody = document.querySelector('#historiaTable tbody');
+        tableBody.innerHTML = '';
+
+        orders.forEach(order => {
+          let formattedProductionDate = "";
+          if (order.production_date.Valid) {
+            const date = new Date(order.production_date.Time);
+            formattedProductionDate = date.toISOString().split('T')[0];
+          }
+
+          const row = document.createElement('tr');
+          row.innerHTML = `
+                            <td>${order.id}</td>
+                            <td>${order.order_item.product_name}</td>
+                            <td>${order.order_item.quantity}</td>
+                            <td>${order.order_item.delivery_date}</td>
+                            <td>${formattedProductionDate}</td>  
+                          `;
+          tableBody.appendChild(row);
+        });
+      } else {
+        console.error('Odpoveď servera nie je pole:', orders);
+      }
+    });
+}
+    document.addEventListener('DOMContentLoaded', (event) => {
+      loadProductionOrders();
+      loadCompletedOrders(); // Pridané volanie funkcie
+    });
+  </script>
+
+</body>
+
+</html>
