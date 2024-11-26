@@ -80,13 +80,11 @@ func CustomerToHTML(customer Customer) string {
 }
 
 func AddCustomer(w http.ResponseWriter, r *http.Request) {
-	// Ensure the request method is POST
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Parse the incoming JSON body
 	var customer Customer
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&customer); err != nil {
@@ -94,20 +92,17 @@ func AddCustomer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Register customer in the database
 	if err := RegisterCustomerInDB(&customer); err != nil {
 		http.Error(w, "Error adding customer to database", http.StatusInternalServerError)
 		return
 	}
 
-	// Return the new customer information as JSON response
 	response, err := json.Marshal(customer)
 	if err != nil {
 		http.Error(w, "Error marshalling response", http.StatusInternalServerError)
 		return
 	}
 
-	// Set the content-type header to JSON
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(response)

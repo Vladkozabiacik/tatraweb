@@ -12,21 +12,18 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// AddOrder pridá novú objednávku
 func AddOrder(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Error parsing form", http.StatusBadRequest)
 		return
 	}
 
-	// Získame ID zákazníka
 	customerID, err := strconv.Atoi(r.FormValue("customer_id"))
 	if err != nil {
 		http.Error(w, "Invalid customer ID", http.StatusBadRequest)
 		return
 	}
 
-	// Získame zoznam produktov a ich množstvo
 	products := r.Form["products[]"]
 	quantities := r.Form["quantities[]"]
 	if len(products) != len(quantities) {
@@ -34,10 +31,8 @@ func AddOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Získame dátum expedície
 	shippingDate := r.FormValue("shipping_date")
 
-	// Pre každý produkt vytvoríme samostatnú objednávku
 	for i := range products {
 		productID, err := strconv.Atoi(products[i])
 		if err != nil {
@@ -50,14 +45,12 @@ func AddOrder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Vytvoríme novú objednávku v databáze
 		orderID, err := createOrder(r, customerID, shippingDate)
 		if err != nil {
 			http.Error(w, "Failed to create order", http.StatusInternalServerError)
 			return
 		}
 
-		// Vytvoríme položku objednávky v databáze
 		err = createOrderItem(orderID, productID, quantity, shippingDate)
 		if err != nil {
 			http.Error(w, "Failed to create order item", http.StatusInternalServerError)
@@ -65,13 +58,10 @@ func AddOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Vrátime úspešnú odpoveď
 	w.WriteHeader(http.StatusCreated)
 }
 
-// createOrder vytvorí novú objednávku v databáze
 func createOrder(r *http.Request, customerID int, shippingDate string) (int, error) {
-	// Získame ID prihláseného používateľa
 	userID := GetUserIDFromSession(r)
 
 	var orderID int
@@ -86,7 +76,6 @@ func createOrder(r *http.Request, customerID int, shippingDate string) (int, err
 	return orderID, nil
 }
 
-// createOrderItem vytvorí novú položku objednávky v databáze
 func createOrderItem(orderID, productID, quantity int, deliveryDate string) error {
 	_, err := db.Exec(`
         INSERT INTO order_items (order_id, product_id, quantity, delivery_date, created_at) 
@@ -95,7 +84,6 @@ func createOrderItem(orderID, productID, quantity int, deliveryDate string) erro
 	return err
 }
 
-// FetchAllOrders načíta všetky objednávky z databázy
 func FetchAllOrders(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query(`
 		SELECT 
@@ -135,7 +123,6 @@ func FetchAllOrders(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Dekódujeme JSON s položkami objednávky
 		err = json.Unmarshal(orderItemsJSON, &order.OrderItems)
 		if err != nil {
 			http.Error(w, "Failed to unmarshal order items", http.StatusInternalServerError)
@@ -144,7 +131,6 @@ func FetchAllOrders(w http.ResponseWriter, r *http.Request) {
 		orders = append(orders, order)
 	}
 
-	// Vrátime objednávky ako JSON
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(orders)
 }
@@ -191,7 +177,6 @@ func FetchAllOrdersForSalesman(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Dekódujeme JSON s položkami objednávky
 		err = json.Unmarshal(orderItemsJSON, &order.OrderItems)
 		if err != nil {
 			http.Error(w, "Failed to unmarshal order items", http.StatusInternalServerError)
@@ -200,13 +185,11 @@ func FetchAllOrdersForSalesman(w http.ResponseWriter, r *http.Request) {
 		orders = append(orders, order)
 	}
 
-	// Vrátime objednávky ako JSON
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(orders)
 }
 
 func AssignOrderToWorksite(w http.ResponseWriter, r *http.Request) {
-	// 1. Získanie dát z požiadavky
 	var requestData struct {
 		OrderID     int    `json:"order_id"`
 		WorkplaceID string `json:"workplace_id"`
@@ -217,7 +200,6 @@ func AssignOrderToWorksite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2. Overenie údajov
 	var orderExists bool
 	err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM orders WHERE id = $1)", requestData.OrderID).Scan(&orderExists)
 	if err != nil {
@@ -229,10 +211,6 @@ func AssignOrderToWorksite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 3. Aktualizácia objednávky - v tomto prípade nie je potrebné aktualizovať objednávku
-	//    samotnú, ale vytvoríme nový záznam v tabuľke production_orders
-
-	// 4. Vytvorenie výrobného príkazu
 	var orderItemID int
 	err = db.QueryRow("SELECT id FROM order_items WHERE order_id = $1", requestData.OrderID).Scan(&orderItemID)
 	if err != nil {
@@ -247,7 +225,6 @@ func AssignOrderToWorksite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 5. Odpoveď
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"message": "Objednávka bola úspešne priradená"})
 }
@@ -285,20 +262,18 @@ func FetchProductionOrders(w http.ResponseWriter, r *http.Request) {
 		po.OrderItem = OrderItem{
 			ProductName:  productName,
 			Quantity:     quantity,
-			DeliveryDate: formattedDeliveryDate, // Použitie formátovaného dátumu
+			DeliveryDate: formattedDeliveryDate,
 		}
 		po.Worksite = worksiteName
 		productionOrders = append(productionOrders, po)
 	}
 
-	// Serializácia dát do JSON
 	jsonData, err := json.Marshal(productionOrders)
 	if err != nil {
 		http.Error(w, "Chyba pri serializácii dát do JSON", http.StatusInternalServerError)
 		return
 	}
 
-	// Odosielanie JSON odpovede
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(w, string(jsonData))
 }
@@ -336,20 +311,18 @@ func FetchCompletedOrders(w http.ResponseWriter, r *http.Request) {
 		po.OrderItem = OrderItem{
 			ProductName:  productName,
 			Quantity:     quantity,
-			DeliveryDate: formattedDeliveryDate, // Použitie formátovaného dátumu
+			DeliveryDate: formattedDeliveryDate,
 		}
 		po.Worksite = worksiteName
 		productionOrders = append(productionOrders, po)
 	}
 
-	// Serializácia dát do JSON
 	jsonData, err := json.Marshal(productionOrders)
 	if err != nil {
 		http.Error(w, "Chyba pri serializácii dát do JSON", http.StatusInternalServerError)
 		return
 	}
 
-	// Odosielanie JSON odpovede
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(w, string(jsonData))
 }
@@ -373,42 +346,39 @@ func EditOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Zabezpečenie, že quantity je číslo
 	quantity, err := strconv.Atoi(order.Quantity)
 	if err != nil {
 		http.Error(w, "Quantity musí byť číslo", http.StatusBadRequest)
 		return
 	}
 
-	// Aktualizácia objednávky v databáze
-	stmt, err := db.Prepare("UPDATE order_items SET product_id=(SELECT id FROM products WHERE name=$1), quantity=$2, delivery_date=$3 WHERE order_id=$4")
+	stmt, err := db.Prepare("UPDATE order_items SET product_id=(SELECT id FROM products WHERE name=$1 LIMIT 1), quantity=$2, delivery_date=$3 WHERE order_id=$4")
 	if err != nil {
 		http.Error(w, "Chyba pri príprave SQL dotazu", http.StatusInternalServerError)
 		return
 	}
 	defer stmt.Close()
-
 	_, err = stmt.Exec(order.ProductName, quantity, order.DeliveryDate, order.OrderID)
 	if err != nil {
+
 		http.Error(w, "Chyba pri aktualizácii order_items", http.StatusInternalServerError)
 		return
 	}
 
-	// 2. Aktualizujeme orders
-	stmt, err = db.Prepare("UPDATE orders SET created_by=(SELECT id from users where name=$1) WHERE id=$2")
+	stmt, err = db.Prepare("UPDATE orders SET created_by=(SELECT id from users where name=$1 LIMIT 1) WHERE id=$2")
 	if err != nil {
+
 		http.Error(w, "Chyba pri príprave SQL dotazu", http.StatusInternalServerError)
 		return
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(order.CreatedBy, order.OrderID) // Predpokladám, že order.OrderID je ID objednávky
+	_, err = stmt.Exec(order.CreatedBy, order.OrderID)
 	if err != nil {
 		http.Error(w, "Chyba pri aktualizácii orders", http.StatusInternalServerError)
 		return
 	}
 
-	// Odpoveď s kódom 200 OK a prázdnym JSON objektom
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{})
@@ -468,20 +438,18 @@ func FetchProductionOrdersForWorksite(w http.ResponseWriter, r *http.Request) {
 		po.OrderItem = OrderItem{
 			ProductName:  productName,
 			Quantity:     quantity,
-			DeliveryDate: formattedDeliveryDate, // Použitie formátovaného dátumu
+			DeliveryDate: formattedDeliveryDate,
 		}
 		po.Worksite = worksiteName
 		productionOrders = append(productionOrders, po)
 	}
 
-	// Serializácia dát do JSON
 	jsonData, err := json.Marshal(productionOrders)
 	if err != nil {
 		http.Error(w, "Chyba pri serializácii dát do JSON", http.StatusInternalServerError)
 		return
 	}
 
-	// Odosielanie JSON odpovede
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(w, string(jsonData))
 }
@@ -539,20 +507,18 @@ func FetchProductionOrdersCompleted(w http.ResponseWriter, r *http.Request) {
 		po.OrderItem = OrderItem{
 			ProductName:  productName,
 			Quantity:     quantity,
-			DeliveryDate: formattedDeliveryDate, // Použitie formátovaného dátumu
+			DeliveryDate: formattedDeliveryDate,
 		}
 		po.Worksite = worksiteName
 		productionOrders = append(productionOrders, po)
 	}
 
-	// Serializácia dát do JSON
 	jsonData, err := json.Marshal(productionOrders)
 	if err != nil {
 		http.Error(w, "Chyba pri serializácii dát do JSON", http.StatusInternalServerError)
 		return
 	}
 
-	// Odosielanie JSON odpovede
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(w, string(jsonData))
 }

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"text/template"
 	"time"
@@ -121,7 +120,6 @@ func RequireRole(roles []string, next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		// Check if the user's role is in the allowed roles
 		roleAllowed := false
 		for _, role := range roles {
 			if claims.Role == role {
@@ -178,13 +176,11 @@ func generateToken(user *User) (string, *AuthError) {
 			Issuer:    tokenIssuer,
 		},
 	}
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
 		return "", NewAuthError("Error generating token", http.StatusInternalServerError)
 	}
-
 	return tokenString, nil
 }
 
@@ -214,14 +210,13 @@ func validateToken(r *http.Request) (*Claims, *AuthError) {
 }
 
 func setAuthCookie(w http.ResponseWriter, tokenString string) {
-	log.Println(tokenString)
 	http.SetCookie(w, &http.Cookie{
 		Name:     tokenCookieName,
 		Value:    tokenString,
 		HttpOnly: true,
 		Expires:  time.Now().Add(tokenDuration),
 		Path:     "/",
-		Secure:   true,
+		// Secure:   true,
 		SameSite: http.SameSiteStrictMode,
 	})
 }
@@ -233,7 +228,7 @@ func clearAuthCookie(w http.ResponseWriter) {
 		HttpOnly: true,
 		Expires:  time.Now().Add(-1 * time.Hour),
 		Path:     "/",
-		Secure:   true,
+		// Secure:   true,
 		SameSite: http.SameSiteStrictMode,
 	})
 }

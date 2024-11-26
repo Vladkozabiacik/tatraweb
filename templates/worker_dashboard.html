@@ -30,12 +30,119 @@
     tr:nth-child(even) {
       background-color: #f9f9f9;
     }
+
+    /* General reset */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    /* Header */
+    .header {
+      background-color: #2d2d2d;
+      color: white;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      margin: 0;
+    }
+
+    /* Logout Button */
+    #logout-button {
+      background-color: #f44336;
+      color: white;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    #logout-button:hover {
+      background-color: #d32f2f;
+    }
+
+    /* Container */
+    .container {
+      max-width: 960px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th,
+    td {
+      padding: 1rem;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f5f5f5;
+      font-weight: bold;
+      color: #555;
+      position: sticky;
+      top: 0;
+    }
+
+    /* Headings */
+    h2 {
+      margin-top: 2rem;
+      color: #2d2d2d;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .container {
+        margin: 10px;
+        padding: 10px;
+      }
+
+      table {
+        font-size: 0.9rem;
+      }
+
+      th,
+      td {
+        padding: 0.75rem;
+      }
+    }
   </style>
 </head>
 
 <body>
   <header class="header">
-    <div class="header-content">
+    <div class="header-content"
+      style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
       <h1 style="margin: 0; padding: 5px;">Vyrobca</h1>
 
       <button hx-post="/logout" hx-target="body" hx-swap="outerHTML" id="logout-button">
@@ -45,124 +152,124 @@
   </header>
   <div id="pracovisko">
   </div>
+  <div style="padding: 10px;">
+    <h2>Výrobné príkazy</h2>
 
-  <h2>Výrobné príkazy</h2>
+    <div id="vyrobnePrikazy">
+      <table id="prikazyTable">
+        <thead>
+          <tr>
+            <th>Zákazník</th>
+            <th>Produkt</th>
+            <th>Množstvo</th>
+            <th>Dátum expedície</th>
+            <th>Akcia</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
 
-  <div id="vyrobnePrikazy">
-    <table id="prikazyTable">
-      <thead>
-        <tr>
-          <th>Zákazník</th>
-          <th>Produkt</th>
-          <th>Množstvo</th>
-          <th>Dátum expedície</th>
-          <th>Akcia</th>
-        </tr>
-      </thead>
-      <tbody>
-      </tbody>
-    </table>
-  </div>
+    <h2>História</h2>
 
-  <h2>História</h2>
+    <div id="historia">
+      <table id="historiaTable">
+        <thead>
+          <tr>
+            <th>Zákazník</th>
+            <th>Produkt</th>
+            <th>Množstvo</th>
+            <th>Dátum expedície</th>
+            <th>Vyrobene dna</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+</body>
+<script>
+  function loadProductionOrders() {
+    fetch('/fetch-production-orders-for-worksite')
+      .then(response => response.json())
+      .then(orders => {
+        if (Array.isArray(orders)) {
+          const tableBody = document.querySelector('#prikazyTable tbody');
+          tableBody.innerHTML = '';
 
-  <div id="historia">
-    <table id="historiaTable">
-      <thead>
-        <tr>
-          <th>Zákazník</th>
-          <th>Produkt</th>
-          <th>Množstvo</th>
-          <th>Dátum expedície</th>
-          <th>Vyrobene dna</th>
-        </tr>
-      </thead>
-      <tbody>
-      </tbody>
-    </table>
-  </div>
-
-  <script>
-    function loadProductionOrders() {
-      fetch('/fetch-production-orders-for-worksite')
-        .then(response => response.json())
-        .then(orders => {
-          if (Array.isArray(orders)) {
-            const tableBody = document.querySelector('#prikazyTable tbody');
-            tableBody.innerHTML = '';
-
-            orders.forEach(order => {
-              const row = document.createElement('tr');
-              row.innerHTML = `
+          orders.forEach(order => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
                                     <td>${order.id}</td>
                                     <td>${order.order_item.product_name}</td>
                                     <td>${order.order_item.quantity}</td>
                                     <td>${order.order_item.delivery_date}</td>
                                     <td><button onclick="submitOrder(${order.id})">Odoslať</button></td>
                                 `;
-              tableBody.appendChild(row);
-            });
-          } else {
-            console.error('Odpoveď servera nie je pole:', orders);
-          }
-        });
-    }
+            tableBody.appendChild(row);
+          });
+        } else {
+          console.error('Odpoveď servera nie je pole:', orders);
+        }
+      });
+  }
 
-    function submitOrder(orderId) {
-      fetch(`/mark-order-as-completed/${orderId}`, {
-        method: 'GET'
+  function submitOrder(orderId) {
+    fetch(`/mark-order-as-completed/${orderId}`, {
+      method: 'GET'
+    })
+      .then(response => {
+        if (response.ok) {
+          console.log('Objednávka označená ako dokončená');
+          loadProductionOrders();
+        } else {
+          console.error('Chyba pri označovaní objednávky');
+        }
       })
-        .then(response => {
-          if (response.ok) {
-            console.log('Objednávka označená ako dokončená');
-            loadProductionOrders();
-          } else {
-            console.error('Chyba pri označovaní objednávky');
-          }
-        })
-        .catch(error => {
-          console.error('Chyba pri označovaní objednávky:', error);
-        });
-    }
+      .catch(error => {
+        console.error('Chyba pri označovaní objednávky:', error);
+      });
+  }
 
-    document.addEventListener('DOMContentLoaded', (event) => {
-      loadProductionOrders();
-    });
-    function loadCompletedOrders() {
-  fetch('/fetch-completed-orders-for-worksite')
-    .then(response => response.json())
-    .then(orders => {
-      if (Array.isArray(orders)) {
-        const tableBody = document.querySelector('#historiaTable tbody');
-        tableBody.innerHTML = '';
+  document.addEventListener('DOMContentLoaded', (event) => {
+    loadProductionOrders();
+  });
+  function loadCompletedOrders() {
+    fetch('/fetch-completed-orders-for-worksite')
+      .then(response => response.json())
+      .then(orders => {
+        if (Array.isArray(orders)) {
+          const tableBody = document.querySelector('#historiaTable tbody');
+          tableBody.innerHTML = '';
 
-        orders.forEach(order => {
-          let formattedProductionDate = "";
-          if (order.production_date.Valid) {
-            const date = new Date(order.production_date.Time);
-            formattedProductionDate = date.toISOString().split('T')[0];
-          }
+          orders.forEach(order => {
+            let formattedProductionDate = "";
+            if (order.production_date.Valid) {
+              const date = new Date(order.production_date.Time);
+              formattedProductionDate = date.toISOString().split('T')[0];
+            }
 
-          const row = document.createElement('tr');
-          row.innerHTML = `
+            const row = document.createElement('tr');
+            row.innerHTML = `
                             <td>${order.id}</td>
                             <td>${order.order_item.product_name}</td>
                             <td>${order.order_item.quantity}</td>
                             <td>${order.order_item.delivery_date}</td>
                             <td>${formattedProductionDate}</td>  
                           `;
-          tableBody.appendChild(row);
-        });
-      } else {
-        console.error('Odpoveď servera nie je pole:', orders);
-      }
-    });
-}
-    document.addEventListener('DOMContentLoaded', (event) => {
-      loadProductionOrders();
-      loadCompletedOrders(); // Pridané volanie funkcie
-    });
-  </script>
+            tableBody.appendChild(row);
+          });
+        } else {
+          console.error('Odpoveď servera nie je pole:', orders);
+        }
+      });
+  }
+  document.addEventListener('DOMContentLoaded', (event) => {
+    loadProductionOrders();
+    loadCompletedOrders(); // Pridané volanie funkcie
+  });
+</script>
 
 </body>
 

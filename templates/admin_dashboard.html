@@ -73,13 +73,130 @@
                 flex-direction: column;
             }
         }
+
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background-color: #2d2d2d;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav {
+            background-color: #e0e0e0;
+            padding: 10px;
+            text-align: center;
+        }
+
+        nav button {
+            margin: 0 10px;
+            padding: 8px 16px;
+            background-color: #ddd;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #content {
+            padding: 20px;
+        }
+
+        .slide {
+            display: none;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f5f5f5;
+        }
+
+        .form-label {
+            font-weight: bold;
+        }
+
+        .btn-link {
+            text-decoration: none;
+        }
+
+        .select2-container {
+            width: 100% !important;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            nav button {
+                margin: 5px 0;
+            }
+        }
+
+        #logout-button {
+            background-color: #f44336;
+            /* Red background color */
+            color: white;
+            /* White text color */
+            padding: 0.5rem 1rem;
+            /* Padding around the text */
+            border: none;
+            /* No border */
+            border-radius: 4px;
+            /* Slightly rounded corners */
+            font-size: 1rem;
+            /* Font size */
+            cursor: pointer;
+            /* Show pointer cursor on hover */
+            transition: background-color 0.3s;
+            /* Smooth transition for background color on hover */
+        }
+
+        #logout-button:hover {
+            background-color: #d32f2f;
+            /* Darker red background color on hover */
+        }
     </style>
 </head>
 
 <body>
 
     <header class="header">
-        <div class="header-content">
+        <div class="header-content" style="display: flex; justify-content: space-between; width: 100%;">
             <h1>Administrativny pracovnik</h1>
 
             <button hx-post="/logout" hx-target="body" hx-swap="outerHTML" id="logout-button">
@@ -287,7 +404,8 @@
                     <form id="orderForm" hx-post="/add-order" hx-swap="none" hx-trigger="submit">
                         <div>
                             <label class="form-label" style="font-weight: bold;">Zákazník</label>
-                            <div class="input-group" style="display: flex; height: 100%;">
+                            <div class="input-group"
+                                style="display: flex; height: 100%; width: 100%; align-items: center;">
                                 <div style="width: 90%; height: 100%;" class="mb-4">
                                     <select class="form-select customer-select" name="customer_id"
                                         hx-get="/fetch-all-customers" hx-trigger="search">
@@ -295,7 +413,7 @@
                                 </div>
                                 <div id="newCustomerFormContainer" style="display: none;">
                                     <div style="display: flex;">
-                                        <div>
+                                        <div style="margin-right: 10px;">
                                             <label for="customerName" class="form-label"
                                                 style="text-align: center; font-weight: bold;">Meno:</label>
                                             <input type="text" class="form-control" id="customerName" name="name">
@@ -335,8 +453,7 @@
                                     <div class="col-md-6 mb-2">
                                         <label class="form-label" style="font-weight: bold;">Produkt</label>
                                         <select class="form-select product-select" name="products[]"
-                                            hx-get="/fetch-all-products" hx-trigger="search">
-                                        </select>
+                                            hx-get="/fetch-all-products" hx-trigger="search"></select>
                                     </div>
                                     <div class="col-md-4 mb-2">
                                         <label class="form-label" style="font-weight: bold;">Množstvo</label>
